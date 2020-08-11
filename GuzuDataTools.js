@@ -1,5 +1,5 @@
-//Ver 0.1.142
-//idea: atob() and btoa()
+//Ver 0.1.143
+//idea: atob() and btoa() //from window. encode decode base64
 class GuzuFileTools {
     /*
     inputId="";
@@ -398,3 +398,31 @@ class GuzuFileTools {
     
 }
 
+/*
+ * Accepts both ranges and two arrays of ranges
+*/
+class GuzuTfTools{
+  layerMapper(applyto,low1,high1,low2,high2){
+      
+      if (Array.isArray(low1)){
+        low2=high1[0];high2=high1[1];
+        high1=low1[1];low1=low1[0];
+      }
+      applyto=tf.layers.reshape({targetShape:[applyto.shape[1],1]}).apply(applyto);
+      applyto=tf.layers.conv1d({kernelSize:[1],filters:1,trainable:false,
+                          kernelInitializer:tf.initializers.constant({value:1}),
+                          biasInitializer:tf.initializers.constant({value:-low1})
+                         }).apply(applyto);
+      applyto=tf.layers.conv1d({kernelSize:[1],filters:1,trainable:false,
+                          kernelInitializer:tf.initializers.constant({value:(low2-high2)/(low1-high1)}),
+                          biasInitializer:tf.initializers.constant({value:+low2})
+                         }).apply(applyto);
+      return tf.layers.flatten().apply(applyto);
+    }
+  //applyto didn't use apply yet. Others should have already been applied
+  layerPass(applyto,topass,toblock){
+    var c1=applyto.apply( tf.layers.concatenate().apply([topass,toblock]) );
+    return tf.layers.concatenate().apply([c1,topass]);
+    
+  }
+}
