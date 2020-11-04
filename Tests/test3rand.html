@@ -21,14 +21,14 @@
         <script>
             var i;
             var p1=new TFLayerPath();
-            p1.add('in1',tf.input({shape:[2]}));
+            p1.add('in1',tf.input({shape:[5]}));
             //p1.add('cx',l.concatenate(),['in1','in1','in1']);
-            var b=l.dense({units:2,activation:defaultActivation});
+            var b=l.dense({units:3,activation:defaultActivation});
             var bb=l.dense({units:2,activation:defaultActivation});
             var c=l.dense({units:1,activation:defaultActivation});
             var cx=[];
             i=0;while(++i<=4){//2,2,1
-                p1.add('a'+i,l.dense({units:3,activation:defaultActivation}),'in1');
+                p1.add('a'+i,l.dense({units:4,activation:defaultActivation}),'in1');
                 p1.add('b'+i,b,'a'+i);
                 p1.add('bb'+i,bb,'b'+i);
                 p1.add('c'+i,c,'bb'+i);
@@ -40,22 +40,35 @@
             console.log(m.summary());
             m.compile({
                 optimizer: //tf.train.momentum(1e-4,0.95)
-                        tf.train.adam(0.01*lrm,1e-8)//learning rate
+                        tf.train.adam(0.001*lrm,1e-8)//learning rate
                 ,loss: myloss
                 ,metrics:['accuracy']
             });
 
-            var ins=tf.tensor([[1,1],[0,1],[1,0],[0,0] ,[0.5,0.5] ]);
-            var ous=tf.tensor([
-                [0.1,0.2,0.3,0.4],
-                [0.2,0.1,0.3,0.4],
-                [0.1,0.2,0.4,0.3],
-                [0.4,0.3,0.2,0.1],
-                [0.2,0.2,0.2,0.2]
-            ]);
+            var insx=[];
+            var dataSize=30;
+            for (i=0;i<dataSize;i++)
+                insx.push([
+                    Math.random(),
+                    Math.random(),
+                    Math.random(),
+                    Math.random(),
+                    Math.random(),
+                ]);
+            var outx=[];
+            for (i=0;i<dataSize;i++)
+                outx.push([
+                    Math.random(),
+                    Math.random(),
+                    Math.random(),
+                    Math.random()
+                ]);
+
+            var ins=tf.tensor(insx);
+            var ous=tf.tensor(outx);
             function testTrain(epochs=50){
                 m.fit(ins,ous,
-                {epochs:epochs}).   then(()=>console.log(test()));
+                {epochs:epochs}).   then(()=>evaluate());
             }
 
             function evaluate(){
@@ -67,6 +80,15 @@
                 if(val)val=tf.tensor([val]);else val=testVal;
                 return m.predict(val).dataSync()
             }
+
+            function testIns(i){
+                i=[test(insx[i]),outx[i]];
+                var result=[];
+                for(var j=0;j<i[0].length;j++)
+                    result.push(i[0][j]-i[1][j]);
+                return result;
+            }
+            
         </script>
     </head>
 </html>
