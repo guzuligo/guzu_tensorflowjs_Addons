@@ -8,7 +8,7 @@
             var cropSize=64;var C=1+(2+4),Cx=3;var scale=.3
             var normalize={r:0,c:C,divide:255,w:cropSize,h:cropSize,x:0,y:0,xscale:scale,yscale:scale,rescale:false};
 
-            var defaultActivation='relu6';
+            var defaultActivation='tanh';//'relu6';
             var inputActivation='relu6';
             var _mse='meanSquaredError';
             var _cce='categoricalCrossentropy';
@@ -24,14 +24,14 @@
             p1.add('in1',tf.input({shape:[2]}));
             //p1.add('cx',l.concatenate(),['in1','in1','in1']);
             var b=l.dense({units:2,activation:defaultActivation});
-            var bb=l.dense({units:3,activation:defaultActivation});
+            //var bb=l.dense({units:3,activation:defaultActivation});
             var c=l.dense({units:1,activation:defaultActivation});
             var cx=[];
             i=0;while(++i<=4){//2,2,1
-                p1.add('a'+i,l.dense({units:3,activation:defaultActivation}),'in1');
+                p1.add('a'+i,l.dense({units:2,activation:defaultActivation}),'in1');
                 p1.add('b'+i,b,'a'+i);
-                p1.add('bb'+i,bb,'b'+i);
-                p1.add('c'+i,c,'bb'+i);
+                //p1.add('bb'+i,bb,'b'+i);
+                p1.add('c'+i,c,'b'+i);
                 cx.push('c'+i);
             }
             p1.add('cx',l.concatenate(),cx);
@@ -55,6 +55,10 @@
             function testTrain(epochs=50){
                 m.fit(ins,ous,
                 {epochs:epochs}).   then(()=>console.log(test()));
+            }
+
+            function evaluate(){
+                m.evaluate(ins,ous)[0].print();
             }
 
             var testVal=tf.tensor([[1,1]]);
