@@ -19,22 +19,49 @@
 
         </script>
         <script>
+            var i;
             var p1=new TFLayerPath();
             p1.add('in1',tf.input({shape:[2]}));
             //p1.add('cx',l.concatenate(),['in1','in1','in1']);
-            p1.add('a1',l.dense({units:1}),'in1');
-            p1.add('b1',l.dense({units:2}),'a1');
-            p1.add('a2',p1.get('a1'),'in1');
-            p1.add('b2',p1.get('b1'),'a2');
-            p1.add('cx2',l.concatenate(),['b1','b2']);
+            var b=l.dense({units:2,activation:defaultActivation});
+            var bb=l.dense({units:3,activation:defaultActivation});
+            var c=l.dense({units:1,activation:defaultActivation});
+            var cx=[];
+            i=0;while(++i<=4){//2,2,1
+                p1.add('a'+i,l.dense({units:3,activation:defaultActivation}),'in1');
+                p1.add('b'+i,b,'a'+i);
+                p1.add('bb'+i,bb,'b'+i);
+                p1.add('c'+i,c,'bb'+i);
+                cx.push('c'+i);
+            }
+            p1.add('cx',l.concatenate(),cx);
+
             var m=tf.model({inputs:[p1.get("in1")],outputs:[p1.apply()]});
             console.log(m.summary());
             m.compile({
                 optimizer: //tf.train.momentum(1e-4,0.95)
-                        tf.train.adam(0.0001*lrm,1e-8)//learning rate
+                        tf.train.adam(0.01*lrm,1e-8)//learning rate
                 ,loss: myloss
                 ,metrics:['accuracy']
             });
+
+            var ins=tf.tensor([[1,1],[0,1],[1,0],[0,0]]);
+            var ous=tf.tensor([
+                [0.1,0.2,0.3,0.4],
+                [0.2,0.1,0.3,0.4],
+                [0.1,0.2,0.4,0.3],
+                [0.4,0.3,0.2,0.1]
+            ]);
+            function testTrain(epochs=50){
+                m.fit(ins,ous,
+                {epochs:epochs}).   then(()=>console.log(test()));
+            }
+
+            var testVal=tf.tensor([[1,1]]);
+            function test(val){
+                if(val)val=tf.tensor([val]);else val=testVal;
+                return m.predict(val).dataSync()
+            }
         </script>
     </head>
 </html>
