@@ -19,21 +19,26 @@
 
         </script>
         <script>
-            var i;
+            var i,j;
             var p1=new TFLayerPath();
             p1.add('in1',tf.input({shape:[5]}));
             //p1.add('cx',l.concatenate(),['in1','in1','in1']);
             var b,bb,c;
-            b =l.dense({units:2,activation:defaultActivation});
+
+
+            
+            b =[];
+            while(b.length<5)b.push(l.dense({units:2,activation:defaultActivation}));
             //bb=l.dense({units:5,activation:defaultActivation});
             c =l.dense({units:2,activation:defaultActivation});
             var cx=[];
             i=0;while(++i<=8){//2,2,1
                 p1.add('a'+i,l.dense({units:2,activation:defaultActivation}),'in1');
-                p1.add('b'+i,b,'a'+i);
+                j=-1;while(++j<b.length)
+                    p1.add(j+'b'+i,b[j],j==0?'a'+i:j+'b'+(i-1));
                 //p1.add('bb'+i,bb,'b'+i);
-                p1.add('c'+i,c,'b'+i);
-                cx.push('c'+i);
+                //p1.add('c'+i,c,'b'+i);
+                cx.push((j-1)+'b'+i);
             }
             p1.add('cx',l.concatenate(),cx);
 
