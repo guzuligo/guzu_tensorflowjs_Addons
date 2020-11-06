@@ -15,7 +15,7 @@
             var lrm=1;//Learning rate multiplier
             var l=tf.layers;
             var t=tf.tensor;
-            var myloss=(Y,y)=>Y.sub(y).pow(8);//tf.losses.absoluteDifference//'logLoss';
+            var myloss=_mse//(Y,y)=>Y.sub(y).pow(4);//tf.losses.absoluteDifference//'logLoss';
 
         </script>
         <script>
@@ -24,29 +24,54 @@
             p1.add('in1',tf.input({shape:[5]}));
             //p1.add('cx',l.concatenate(),['in1','in1','in1']);
             var b,bb,c;
+            var idea=getVar('idea') || '1';
+            switch(Number(idea)){
+                case 1:
+                /////////////////////////////////////////
+                ///////////////UNIT//////////////////////
+                /////////////////////////////////////////
+                
+                
+                //bb=l.dense({units:5,activation:defaultActivation});
+                
 
+                var cx=[];
+                i=0;
+                while(++i<=8){//2,2,1
 
-            /////////////////////////////////////////
-            ///////////////UNIT//////////////////////
-            /////////////////////////////////////////
-            
-            
-            //bb=l.dense({units:5,activation:defaultActivation});
-            
-            var cx=[];
-            i=0;while(++i<=4){//2,2,1
-                b =[];var z=-1;
-                while(++z<5)b.push(l.dense({units:z%2==1?2:3,activation:defaultActivation}));
-                p1.add('a'+i,l.dense({units:5,activation:defaultActivation}),'in1');
-                j=-1;while(++j<b.length)
-                    p1.add('b'+j+':'+i,b[j],j==0?'a'+i:'b'+(j-1)+':'+i);
-                //p1.add('bb'+i,bb,'b'+i);
-                j--;p1.add('c'+i,c=c||l.dense({units:1,activation:defaultActivation})
-                ,'b'+j+':'+i);
-                cx.push('c'+i);
-            }
-            p1.add('cx',l.concatenate(),cx);
+                    p1.add('a'+i,l.dense({units:3,activation:defaultActivation}),'in1');
 
+                    if(false || !b)//true to use separate paths
+                    {
+                        
+                        b =[];var z=-1;
+                        while(++z<1)b.push(l.dense({units:z%2==1?3:3,activation:defaultActivation}));
+                    }
+                    j=-1;while(++j<b.length)
+                        p1.add('b'+j+':'+i,b[j],j==0?'a'+i:'b'+(j-1)+':'+i);
+                    //p1.add('bb'+i,bb,'b'+i);
+                    j--;p1.add('c'+i,c=c||l.dense({units:3,activation:defaultActivation})
+                    ,'b'+j+':'+i);
+                    cx.push('c'+i);
+                }
+                p1.add('cx',l.concatenate(),cx);
+
+                break;
+
+                case 2:
+                //2 hidden
+                p1.add('a',l.dense({units:30,activation:'tanh'}),'in1');
+                p1.add('cx',l.dense({units:20,activation:'tanh'}),'a');
+                break;
+
+                case 3:
+                //1 hidden
+                p1.add('cx',l.dense({units:100,activation:'tanh'}),'in1');
+                //p1.add('cx',l.dense({units:20,activation:'tanh'}),'a');
+                break;
+                
+}
+            p1.add('d',l.dense({units:4,activation:'sigmoid'}),'cx')
             //p1.add('cx',l.concatenate(),cx);
 
 
@@ -65,7 +90,7 @@
             });
 
             var insx=[];
-            var dataSize=10;
+            var dataSize=30;
             for (i=0;i<dataSize;i++)
                 insx.push([
                     i/dataSize,
@@ -129,6 +154,10 @@
 
             function $(id){return document.getElementById(id);}
             
+            function getVar(varName){
+                return new URLSearchParams(window.location.search).get(varName);
+            }
+
         </script>
     </head>
     <body>
