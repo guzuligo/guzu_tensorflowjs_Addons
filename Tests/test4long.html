@@ -15,7 +15,7 @@
             var lrm=1;//Learning rate multiplier
             var l=tf.layers;
             var t=tf.tensor;
-            var myloss=_mse;
+            var myloss=(Y,y)=>Y.sub(y).pow(8);//tf.losses.absoluteDifference//'logLoss';
 
         </script>
         <script>
@@ -26,34 +26,28 @@
             var b,bb,c;
 
 
+            /////////////////////////////////////////
+            ///////////////UNIT//////////////////////
+            /////////////////////////////////////////
             
-            b =[];
-            while(b.length<5)b.push(l.dense({units:2,activation:defaultActivation}));
+            
             //bb=l.dense({units:5,activation:defaultActivation});
-            c =l.dense({units:2,activation:defaultActivation});
+            
             var cx=[];
-            i=0;while(++i<=8){//2,2,1
-                p1.add('a'+i,l.dense({units:2,activation:defaultActivation}),'in1');
+            i=0;while(++i<=4){//2,2,1
+                b =[];var z=-1;
+                while(++z<5)b.push(l.dense({units:z%2==1?2:3,activation:defaultActivation}));
+                p1.add('a'+i,l.dense({units:5,activation:defaultActivation}),'in1');
                 j=-1;while(++j<b.length)
-                    p1.add(j+'b'+i,b[j],j==0?'a'+i:j+'b'+(i-1));
+                    p1.add('b'+j+':'+i,b[j],j==0?'a'+i:'b'+(j-1)+':'+i);
                 //p1.add('bb'+i,bb,'b'+i);
-                //p1.add('c'+i,c,'b'+i);
-                cx.push((j-1)+'b'+i);
+                j--;p1.add('c'+i,c=c||l.dense({units:1,activation:defaultActivation})
+                ,'b'+j+':'+i);
+                cx.push('c'+i);
             }
             p1.add('cx',l.concatenate(),cx);
 
-            cx=[];
-            b =l.dense({units:3,activation:defaultActivation});
-            //bb=l.dense({units:5,activation:defaultActivation});
-            c =l.dense({units:1,activation:defaultActivation});
-            i=0;while(++i<=4){//2,2,1
-                p1.add('2a'+i,l.dense({units:2,activation:defaultActivation}),'cx');
-                p1.add('2b'+i,b,'2a'+i);
-                //p1.add('2bb'+i,bb,'2b'+i);
-                p1.add('2c'+i,c,'2b'+i);
-                cx.push('2c'+i);
-            }
-            p1.add('cx2',l.concatenate(),cx);
+            //p1.add('cx',l.concatenate(),cx);
 
 
 
@@ -65,12 +59,13 @@
             m.compile({
                 optimizer: //tf.train.momentum(1e-4,0.95)
                         tf.train.adam(0.03*lrm,1e-8)//learning rate
+                        //tf.train.sgd(0.99)
                 ,loss: myloss
                 ,metrics:['accuracy']
             });
 
             var insx=[];
-            var dataSize=30;
+            var dataSize=10;
             for (i=0;i<dataSize;i++)
                 insx.push([
                     i/dataSize,
@@ -90,13 +85,24 @@
 
             var ins=tf.tensor(insx);
             var ous=tf.tensor(outx);
+
+
+
             function testTrain(epochs=50){
+                if(typeof epochs ==='string')
+                    epochs=Number($(epochs).value);
                 m.fit(ins,ous,
-                {epochs:epochs}).   then(()=>{evaluate();console.warn('FINISHED')});
+                {epochs:epochs,callbacks:{
+                    onEpochEnd:(epoch, logs)=>$('counter').innerHTML=epoch
+                }}).   then(()=>{testEvaluate();$('counter').innerHTML='Done'});
             }
 
-            function evaluate(){
-                m.evaluate(ins,ous)[0].print();
+            function testEvaluate(){
+                m.evaluate(ins,ous)[0].data().then((a)=>{
+                    var v=Math.floor(a[0]*100000)/100;
+                   $('ev').innerHTML="<b>ERROR: </b> "+v+"% <small>:"+a[0]+"</small>";
+                })
+                //m.evaluate(ins,ous)[0].print();
             }
 
             var testVal=tf.tensor([[1,1]]);
@@ -107,10 +113,12 @@
 
             function testIns(i){
                 if(i===undefined)i=(Math.floor(Math.random()*dataSize));
+                console.log('testIns('+i+')');
                 i=[test(insx[i]),outx[i]];
                 var result=[];
                 for(var j=0;j<i[0].length;j++)
                     result.push(i[0][j]-i[1][j]);
+                
                 return result;
             }
             
@@ -119,6 +127,16 @@
                     m.optimizer.learningRate=newLearningRate;
             }
 
+            function $(id){return document.getElementById(id);}
+            
         </script>
     </head>
+    <body>
+        <button onclick="testEvaluate()">evaluate</button> <small id='ev'></small><br>
+        <button onclick="testTrain('epochs')">Train</button>
+        <input id='epochs' size=1></input><small id='counter'>Epochs</small>
+        <br>
+        
+        
+    </body>
 </html>
