@@ -1,0 +1,173 @@
+<html>
+    <head>
+        <script src='../google/tensorflow2.7.0.min.js'></script>
+        <script src='../TFLayerPath.js'></script>
+
+        <script>
+            //shortcut varialbes
+            var cropSize=64;var C=1+(2+4),Cx=3;var scale=.3
+            var normalize={r:0,c:C,divide:255,w:cropSize,h:cropSize,x:0,y:0,xscale:scale,yscale:scale,rescale:false};
+
+            var defaultActivation='tanh';//'relu6';
+            var inputActivation='relu6';
+            var _mse='meanSquaredError';
+            var _cce='categoricalCrossentropy';
+            var lrm=1;//Learning rate multiplier
+            var l=tf.layers;
+            var t=tf.tensor;
+            var myloss=_mse//(Y,y)=>Y.sub(y).pow(4);//tf.losses.absoluteDifference//'logLoss';
+
+        </script>
+        <script>
+            var i,j;
+            var p1=new TFLayerPath();
+            p1.add('in1',tf.input({shape:[5]}));
+            //p1.add('cx',l.concatenate(),['in1','in1','in1']);
+            var b,bb,c;
+            var idea=getVar('idea') || '1';
+            switch(Number(idea)){
+                case 1:
+                /////////////////////////////////////////
+                ///////////////UNIT//////////////////////
+                /////////////////////////////////////////
+                
+                
+                //bb=l.dense({units:5,activation:defaultActivation});
+                
+
+                var cx=[];
+                i=0;
+                while(++i<=4){//2,2,1
+
+                    p1.add('a'+i,l.dense({units:4,activation:defaultActivation}),'in1');
+
+                    if(!false || !b)//true to use separate paths
+                    {
+                        
+                        b =[];var z=-1;
+                        while(++z<1)b.push(l.dense({units:z%2==1?2:3,activation:defaultActivation}));
+                    }
+                    j=-1;while(++j<b.length)
+                        p1.add('b'+j+':'+i,b[j],j==0?'a'+i:'b'+(j-1)+':'+i);
+                    //p1.add('bb'+i,bb,'b'+i);
+                    j--;p1.add('c'+i,c=c||l.dense({units:3,activation:defaultActivation})
+                    ,'b'+j+':'+i);
+                    cx.push('c'+i);
+                }
+                p1.add('cx',l.concatenate(),cx);
+
+                break;
+
+                case 2:
+                //2 hidden
+                p1.add('a',l.dense({units:30,activation:'tanh'}),'in1');
+                p1.add('cx',l.dense({units:20,activation:'tanh'}),'a');
+                break;
+
+                case 3:
+                //1 hidden
+                p1.add('cx',l.dense({units:1000,activation:'tanh'}),'in1');
+                //p1.add('cx',l.dense({units:20,activation:'tanh'}),'a');
+                break;
+                
+            }
+            
+            
+            p1.add('d',l.dense({units:4,activation:'sigmoid'}),'cx')
+            //p1.add('cx',l.concatenate(),cx);
+
+
+
+
+
+
+            var m=tf.model({inputs:[p1.get("in1")],outputs:[p1.apply()]});
+            console.log(m.summary());
+            m.compile({
+                optimizer: //tf.train.momentum(1e-4,0.95)
+                        tf.train.adam(0.03*lrm,1e-8)//learning rate
+                        //tf.train.sgd(0.99)
+                ,loss: myloss
+                ,metrics:['accuracy']
+            });
+
+            var insx=[];
+            var dataSize=30;
+            for (i=0;i<dataSize;i++)
+                insx.push([
+                    i/dataSize,
+                    i/(dataSize*2),
+                    0.9-i/(dataSize*2),
+                    0.5+i/dataSize/10,
+                    0.3-i/dataSize/10
+                ]);
+            var outx=[];
+            for (i=0;i<dataSize;i++)
+                outx.push([
+                    0.9-i/dataSize/4,
+                    Math.random(),
+                    Math.random(),
+                    0.5+i/dataSize/10
+                ]);
+
+            var ins=tf.tensor(insx);
+            var ous=tf.tensor(outx);
+
+
+
+            function testTrain(epochs=50){
+                if(typeof epochs ==='string')
+                    epochs=Number($(epochs).value);
+                m.fit(ins,ous,
+                {epochs:epochs,callbacks:{
+                    onEpochEnd:(epoch, logs)=>$('counter').innerHTML=epoch
+                }}).   then(()=>{testEvaluate();$('counter').innerHTML='Done'});
+            }
+
+            function testEvaluate(){
+                m.evaluate(ins,ous)[0].data().then((a)=>{
+                    var v=Math.floor(a[0]*100000)/100;
+                   $('ev').innerHTML="<b>ERROR: </b> "+v+"% <small>:"+a[0]+"</small>";
+                })
+                //m.evaluate(ins,ous)[0].print();
+            }
+
+            var testVal=tf.tensor([[1,1]]);
+            function test(val){
+                if(val)val=tf.tensor([val]);else val=testVal;
+                return m.predict(val).dataSync()
+            }
+
+            function testIns(i){
+                if(i===undefined)i=(Math.floor(Math.random()*dataSize));
+                console.log('testIns('+i+')');
+                i=[test(insx[i]),outx[i]];
+                var result=[];
+                for(var j=0;j<i[0].length;j++)
+                    result.push(i[0][j]-i[1][j]);
+                
+                return result;
+            }
+            
+            function lr(newLearningRate){
+                if(newLearningRate)
+                    m.optimizer.learningRate=newLearningRate;
+            }
+
+            function $(id){return document.getElementById(id);}
+            
+            function getVar(varName){
+                return new URLSearchParams(window.location.search).get(varName);
+            }
+
+        </script>
+    </head>
+    <body>
+        <button onclick="testEvaluate()">evaluate</button> <small id='ev'></small><br>
+        <button onclick="testTrain('epochs')">Train</button>
+        <input id='epochs' size=1></input><small id='counter'>Epochs</small>
+        <br>
+        
+        
+    </body>
+</html>
