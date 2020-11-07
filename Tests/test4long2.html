@@ -37,36 +37,60 @@
 
                 var cx=[];
                 i=0;
-                while(++i<=4){//2,2,1
+                while(++i<=5){//2,2,1
 
-                    p1.add('a'+i,l.dense({units:4,activation:defaultActivation}),'in1');
+                    p1.add('a'+i,l.dense({units:2,activation:defaultActivation}),'in1');
 
                     if(!false || !b)//true to use separate paths
                     {
                         
                         b =[];var z=-1;
-                        while(++z<1)b.push(l.dense({units:z%2==1?2:3,activation:defaultActivation}));
+                        while(++z<2)b.push(l.dense({units:z%2==0?5:3,activation:defaultActivation}));
                     }
                     j=-1;while(++j<b.length)
                         p1.add('b'+j+':'+i,b[j],j==0?'a'+i:'b'+(j-1)+':'+i);
                     //p1.add('bb'+i,bb,'b'+i);
-                    j--;p1.add('c'+i,c=c||l.dense({units:3,activation:defaultActivation})
+                    j--;p1.add('c'+i,c=c||l.dense({units:1,activation:defaultActivation})
                     ,'b'+j+':'+i);
                     cx.push('c'+i);
                 }
+                p1.add('c0',l.concatenate(),cx);
+
+
+                cx=[];
+                i=0;
+                while(++i<=5){//2,2,1
+
+                    p1.add('az'+i,l.dense({units:2,activation:defaultActivation}),'c0');
+
+                    if(!false || !b)//true to use separate paths
+                    {
+                        
+                        b =[];var z=-1;
+                        while(++z<2)b.push(l.dense({units:z%2==0?5:3,activation:defaultActivation}));
+                    }
+                    j=-1;while(++j<b.length)
+                        p1.add('bz'+j+':'+i,b[j],j==0?'az'+i:'bz'+(j-1)+':'+i);
+                    //p1.add('bb'+i,bb,'b'+i);
+                    j--;p1.add('cz'+i,c=c||l.dense({units:1,activation:defaultActivation})
+                    ,'bz'+j+':'+i);
+                    cx.push('cz'+i);
+                }
+
+
                 p1.add('cx',l.concatenate(),cx);
 
                 break;
 
                 case 2:
                 //2 hidden
-                p1.add('a',l.dense({units:30,activation:'tanh'}),'in1');
-                p1.add('cx',l.dense({units:20,activation:'tanh'}),'a');
+                p1.add('a',l.dense({units:10,activation:'tanh'}),'in1');
+                p1.add('cx',l.dense({units:10,activation:'tanh'}),'a');
                 break;
 
                 case 3:
                 //1 hidden
-                p1.add('cx',l.dense({units:1000,activation:'tanh'}),'in1');
+                p1.add('cx',l.dense({units:5,activation:'tanh'}),'in1');
                 //p1.add('cx',l.dense({units:20,activation:'tanh'}),'a');
                 break;
                 
@@ -84,15 +108,15 @@
             var m=tf.model({inputs:[p1.get("in1")],outputs:[p1.apply()]});
             console.log(m.summary());
             m.compile({
-                optimizer: //tf.train.momentum(1e-4,0.95)
-                        tf.train.adam(0.03*lrm,1e-8)//learning rate
+                optimizer: tf.train.momentum(1e-4,0.95)
+                        //tf.train.adam(0.013*lrm,1e-8)//learning rate
                         //tf.train.sgd(0.99)
                 ,loss: myloss
                 ,metrics:['accuracy']
             });
 
             var insx=[];
-            var dataSize=30;
+            var dataSize=20;
             for (i=0;i<dataSize;i++)
                 insx.push([
                     i/dataSize,
@@ -120,7 +144,10 @@
                     epochs=Number($(epochs).value);
                 m.fit(ins,ous,
                 {epochs:epochs,callbacks:{
-                    onEpochEnd:(epoch, logs)=>$('counter').innerHTML=epoch
+                    onEpochEnd:(epoch, logs)=>{
+                        $('counter').innerHTML=epoch;
+                        $('acc').innerHTML=(logs.acc+"<br>Loss: "+logs.loss);
+                    }
                 }}).   then(()=>{testEvaluate();$('counter').innerHTML='Done'});
             }
 
@@ -166,7 +193,7 @@
         <button onclick="testEvaluate()">evaluate</button> <small id='ev'></small><br>
         <button onclick="testTrain('epochs')">Train</button>
         <input id='epochs' size=1></input><small id='counter'>Epochs</small>
-        <br>
+        <br>Accuricy: <i id='acc'></i>
         
         
     </body>
