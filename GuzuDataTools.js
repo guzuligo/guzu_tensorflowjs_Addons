@@ -1,4 +1,4 @@
-//Ver 0.1.143
+//Ver 0.1.144
 //idea: atob() and btoa() //from window. encode decode base64
 class GuzuFileTools {
     /*
@@ -425,4 +425,39 @@ class GuzuTfTools{
     return tf.layers.concatenate().apply([c1,topass]);
     
   }
+  
+  //multiplies the previous layer
+  mul(val,bias){
+    var m={
+      v:val===undefined?-1:val,
+      b:bias?bias:0,
+      apply:function(applyto){
+        var tool="conv"+(applyto.rank-2)+"d";
+        console.log(applyto);
+        console.log(tool);
+        //if (applyto.shape)
+        applyto=tf.layers[tool]({kernelSize:1,filters:applyto.shape[applyto.shape.length-1],
+                                 trainable:false,
+                          kernelInitializer:tf.initializers.constant({value:this.v}),
+                          biasInitializer:tf.initializers.constant({value:this.b})
+                         }).apply(applyto);
+        return applyto;
+      }
+    }
+    
+    return m;
+  }
+  
+  sub(bias){
+    var t=this;
+    return {
+      apply:function(applyto){
+        var a1=t.mul(-1,bias).apply(applyto[1]);
+        return tf.layers.add().apply([applyto[0],a1]);
+      }
+    };
+  }
+  
+  
+  
 }
