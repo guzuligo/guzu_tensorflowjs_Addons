@@ -1,4 +1,4 @@
-//Ver 0.1.0
+//Ver 0.1.1
 //Helps creating multipath model
 class TFLayerPath{
   
@@ -6,6 +6,11 @@ class TFLayerPath{
     this.layerPath=[];
     this.layerNames={};
     this.name=name;
+  }
+  
+  //TODO:needs testing
+  clone(){
+    return Object.assign(Object.create(Object.getPrototypeOf(this)), this);
   }
   
   /*
@@ -19,6 +24,12 @@ class TFLayerPath{
     if(this.layerNames[index_]){throw("Name conflect: "+index_)}
     this.layerNames[index_]={id:this.layerPath.length,defaults:{trainable:layer_.trainable}};
     this.layerPath.push([index_,layer_,applytoIndex,-1]);//[ name, tf.layer , #to apply to, redirect ]
+    this._lastIndex=index_;
+  }
+  
+  //connects last added to new add
+  to(index_,layer_){
+    this.add(index_,layer_,this._lastIndex);
   }
   
   /*
