@@ -1,4 +1,4 @@
-//Ver 0.1.1
+//Ver 0.1.2
 //Helps creating multipath model
 class TFLayerPath{
   
@@ -60,18 +60,26 @@ class TFLayerPath{
   
   //returns tf.layer, which is specificly useful for input
   get(name){
-    
-    return this.getPath(name)[1];
+    var result=this.getPath(name);
+    return result!=undefined?result[1]:undefined;
   }
   
   //returns this.layerPath[name]
   getPath(name){
-    return this.layerPath[this.getIndex(name)];
+    var result=this.getIndex(name);
+    return result!=undefined?this.layerPath[this.getIndex(name)]:undefined;
   }
   
   //returns the # index of this name
   getIndex(name){
-    return (isNaN(name))? this.layerNames[name].id:name;
+    var result;
+    if(isNaN(name)){
+      result=this.layerNames[name];
+      if(result)
+        return result.id;
+    }else return name;
+    return undefined;
+    //return (isNaN(name))? this.layerNames[name].id:name;
   }
   //{id,defaults:{trainable}}
   getInfo(name){
