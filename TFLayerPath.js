@@ -1,4 +1,4 @@
-//Ver 0.1.2
+//Ver 0.1.3
 //Helps creating multipath model
 class TFLayerPath{
   
@@ -32,30 +32,37 @@ class TFLayerPath{
     this.add(index_,layer_,this._lastIndex);
   }
   
+  
   /*
    * After adding, use apply to activate tf.apply chaing to use it in a model. 
    * @param {path_} the path index that has output layer
   */
-  apply(path_){
+  apply(path_,undefinedIsTop_=true){
     //console.log(path_);
-    if (path_===undefined) return this.apply(this.layerPath.length-1);//apply() starts
-    if (typeof path_==='string')return this.apply(this.getIndex(path_));
+    if (path_===undefined) {
+      if(undefinedIsTop_)
+        return this.apply(this.layerPath.length-1);//apply() starts
+      console.warn("Path ["+this._prevPath+"] unknown");
+      return null;
+    }
+    
+    if (typeof path_==='string')return this.apply(this.getIndex(path_),false);
     if (this.layerPath[path_][3]!=-1)//do redirect?
-      return this.apply(this.layerPath[path_][3]);
+      return this.apply(this.layerPath[path_][3],false);
     
     if (this.layerPath[path_][2]===-1) return this.layerPath[path_][1];//if input layer, return it
     var l=this.layerPath[path_];
     var applyto;
     //console.log("applyto")
     if (!Array.isArray(l[2]))
-      applyto=this.apply(this.getIndex(l[2]));
+      applyto=this.apply(this.getIndex(this._prevPath=l[2]),false);
     else {
       applyto=[];
       var i=-1;while(++i<l[2].length)
-        applyto.push(this.apply(this.getIndex(l[2][i])));
+        applyto.push(this.apply(this.getIndex(this._prevPath=l[2][i]),false));
     }
     //console.log("return: "+path_)
-    return l[1].apply(applyto);
+    return l[1].apply(applyto,false);
   }
   
   //returns tf.layer, which is specificly useful for input
