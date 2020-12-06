@@ -1,20 +1,4 @@
-/* 
- * Copyright (C) 2019 guzuligo
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
+//ver 1.1
 class AddCoords extends tf.layers.Layer {
     
     static get className() {
@@ -28,14 +12,14 @@ class AddCoords extends tf.layers.Layer {
         this.supportsMasking = true;
     }
     
-    static get className() {
-    return 'AddCoords';
-    }
+    //static get className() {
+    //return 'AddCoords';
+    //}
     
     computeOutputShape(inputShape) {
-        return [inputShape[0], inputShape[1], inputShape[2], inputShape[3]];
+        return [inputShape[0], inputShape[1], inputShape[2], inputShape[3]/*+2*/];
     }
-    
+     
     call(it_, kwargs){
         var s=tf.scalar;
         var it=Array.isArray(it_)?it_[0]:it_;
@@ -76,3 +60,41 @@ class AddCoords extends tf.layers.Layer {
 
 tf.serialization.registerClass(AddCoords);  // Needed for serialization.
 //export function guzuCoordConv() {return new GuzuCoordConv();}
+
+
+
+
+//to use: new AddScalar({values:[6,7]})
+class AddScalar extends tf.layers.Layer {
+    
+    static className='AddScalar';
+    
+    
+    constructor(args) {
+        super({});
+        args=args||{};
+        //this.xd=args.xdim;this.yd=args.ydim;this.withr=args.withr;
+        this.supportsMasking = true;
+        this.values=args.values;
+    }
+    
+    computeOutputShape(inputShape) {
+        return [inputShape[0], inputShape[1]+this.values.length/*+2*/];
+    }
+     
+    call(it_, kwargs){
+      this.invokeCallHook(it_, kwargs);
+      
+      this._dim=this.values.length;
+      var res;//=it_;
+      res=it_;
+      //console.log("res:",res);
+      res[0]=it_[0].concat(tf.tensor([this.values]).tile([it_[0].shape[0],1]),-1);
+      
+      //if(tu++<16*16*3 && tu%15===0)res[0].print();//res[1].print();
+      
+      return res;
+    }
+}
+var tu=0;
+tf.serialization.registerClass(AddScalar);  // Needed for serialization.
