@@ -1,4 +1,4 @@
-//ver 1.2e
+//ver 1.2f
 class AddCoords extends tf.layers.Layer {
     //Idea from Uber
     static get className() {
@@ -174,10 +174,11 @@ class AddCounter extends tf.layers.Layer {
     }
      
     call(it_, kwargs){
+      return tf.tidy(() =>  this.callTidy(it_, kwargs));
+    }
+    
+    callTidy(it_, kwargs){
       this.invokeCallHook(it_, kwargs);
-      //var it=Array.isArray(it_)?it_[0]:it_;//missed up and needs fixing
-      //it_[0].print();
-      
       var res,a;//=it_;
       res=it_;
       a=it_[0];
@@ -190,12 +191,10 @@ class AddCounter extends tf.layers.Layer {
         case 4://make channel first and flatten the rest
           res[0]=res[0].transpose([0,3,1,2]).reshape([a.shape[0],a.shape[3],a.shape[1]*a.shape[2]]);
           prem=[1,0,2];
-          //console.log("o0o:4");
           break;
         case 3://TODO
-          res[0]=res[0]//.transpose(prem=[0,2,1])//
-            .reshape([a.shape[0],a.shape[1]*a.shape[2]]);
-          //console.log("Shape dim 3 not ready. //TODO: Testing");//res[0].print();
+          res[0]=res[0].reshape([a.shape[0],a.shape[1]*a.shape[2]]);
+          console.log("Shape dim 3 not ready. //TODO: Testing");//res[0].print();
           break;
         case 2:
         //console.log("o0o")
@@ -225,14 +224,6 @@ class AddCounter extends tf.layers.Layer {
           r=res[0].shape;//console.log(r)
         }
       }
-     
-      
-      //res[0].print();
-        //res[0]=res[0].expandDims(0);
-        //res[0]=res[0].mul(this.scale);
-      
-      
-       
       return res[0];
        //this.dataFormat ==='channelsFirst'
     }
