@@ -1,6 +1,6 @@
-//ver 1.1
+//ver 1.2
 class AddCoords extends tf.layers.Layer {
-    
+    //Idea from Uber
     static get className() {
         return 'AddCoords';
     }
@@ -84,17 +84,118 @@ class AddScalar extends tf.layers.Layer {
      
     call(it_, kwargs){
       this.invokeCallHook(it_, kwargs);
-      
       this._dim=this.values.length;
       var res;//=it_;
       res=it_;
-      //console.log("res:",res);
+      
       res[0]=it_[0].concat(tf.tensor([this.values]).tile([it_[0].shape[0],1]),-1);
       
-      //if(tu++<16*16*3 && tu%15===0)res[0].print();//res[1].print();
       
       return res;
     }
 }
-var tu=0;
+
 tf.serialization.registerClass(AddScalar);  // Needed for serialization.
+
+
+//epic win
+class AddCounter extends tf.layers.Layer {
+    
+    //static className='AddCounter';
+    static get className() {
+        return 'AddCounter';
+    }
+    
+    constructor(args) {
+      args=args||{};
+      args.trainable=false;
+      super(args);
+      
+      //this.xd=args.xdim;this.yd=args.ydim;this.withr=args.withr;
+      this.supportsMasking = true;
+      //this.values=args.values;
+      this.find=args.find;
+      this.units=args.units;
+      this.range=args.range;
+      this.weight=args.weight||1;// should be |10
+      this.scale=args.scale||1;
+      this._createFindValues();
+        
+      //this.find=this.find.map(e=>[[e]]);
+      this.find=this.find.map(e=> [[[e]]]);
+     
+    }
+  
+    _createFindValues(){
+      //create values to find
+      if(this.find===undefined){
+        this.find=[];
+        if(this.range===undefined)this.range=[0,1];
+        if(this.units===undefined)this.units=10;
+        var r=this.range;var u=this.units;var s=r[1]-r[0];
+        for(var i=0;i<u;i++)
+          this.find.push(i*s/u+r[0]);
+      }
+      this.units=this.find.length;
+    }
+  
+    
+    computeOutputShape(inputShape) {//TODO
+      //var
+      var outputshape;
+        
+      if(inputShape.length<3)
+        outputshape= [inputShape[0],this.find.length];
+      else
+          outputshape=[inputShape[0], inputShape[inputShape.length-1],this.units/*+2*/];
+      //console.log("SHAPE:",outputshape)
+      return outputshape;
+    }
+     
+    call(it_, kwargs){
+      this.invokeCallHook(it_, kwargs);
+      var it=Array.isArray(it_)?it_[0]:it_;//missed up and needs fixing
+      //it_[0].print();
+      //this._dim=this.values.length;
+      var res,a;//=it_;
+      res=it_;
+      a=it_[0];
+      
+      
+      
+      var prem;
+      //if(false)
+      switch(res[0].shape.length){
+        case 4:
+          res[0]=res[0].transpose([0,3,1,2]).reshape([a.shape[0],a.shape[3],a.shape[1]*a.shape[2]]);
+          prem=[1,0,2];
+          //console.log("o0o:4");
+          break;
+        case 3://TODO
+          res[0]=res[0]//.transpose(prem=[0,2,1])//
+            .reshape([a.shape[0],a.shape[1]*a.shape[2]]);
+          console.log("Shape dim 3 not ready. //TODO: Testing");//res[0].print();
+          break;
+        case 2:
+       // console.log("o0o")
+          //console.log("o0o:2");
+          break;
+      }
+      //res[0].print()
+      res[0]=it_[0].mul(tf.scalar(this.weight)).sub(tf.tensor(this.find)).mul(100).pow(2).mul(tf.scalar(-1)).sigmoid().mul(this.scale);
+      
+      res[0]=res[0].sum(-1);//.round();
+     
+      res[0]=res[0].transpose(prem);//res[0].print()
+      //res[0].print();
+        //res[0]=res[0].expandDims(0);
+        //res[0]=res[0].mul(this.scale);
+      
+      
+       
+      return res[0];
+       //this.dataFormat ==='channelsFirst'
+    }
+}
+
+tf.serialization.registerClass(AddCounter);  // Needed for serialization.
