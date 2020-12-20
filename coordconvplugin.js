@@ -1,4 +1,4 @@
-//ver 1.2
+//ver 1.2b
 class AddCoords extends tf.layers.Layer {
     //Idea from Uber
     static get className() {
@@ -99,6 +99,18 @@ tf.serialization.registerClass(AddScalar);  // Needed for serialization.
 
 
 //epic win
+/**args:{
+
+    weight: multiply the input by this before processing
+    scale: multiply the output by this before sending
+    slope: (default:100) steepness of error tolerance 
+    
+    find:Array of values to find
+ if find not used:
+    range: default:[0,1] range in which the units are devided
+    units: count of numbers to use in the range
+   }
+*/
 class AddCounter extends tf.layers.Layer {
     
     //static className='AddCounter';
@@ -119,6 +131,7 @@ class AddCounter extends tf.layers.Layer {
       this.range=args.range;
       this.weight=args.weight||1;// should be |10
       this.scale=args.scale||1;
+      this.slope=args.slope||100
       this._createFindValues();
         
       //this.find=this.find.map(e=>[[e]]);
@@ -182,7 +195,7 @@ class AddCounter extends tf.layers.Layer {
           break;
       }
       //res[0].print()
-      res[0]=it_[0].mul(tf.scalar(this.weight)).sub(tf.tensor(this.find)).mul(100).pow(2).mul(tf.scalar(-1)).sigmoid().mul(this.scale);
+      res[0]=it_[0].mul(tf.scalar(this.weight)).sub(tf.tensor(this.find)).mul(this.slope).pow(2).mul(tf.scalar(-1)).sigmoid().mul(this.scale*2);
       
       res[0]=res[0].sum(-1);//.round();
      
