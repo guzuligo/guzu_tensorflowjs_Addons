@@ -1,4 +1,4 @@
-//ver 1.2d
+//ver 1.2e
 class AddCoords extends tf.layers.Layer {
     //Idea from Uber
     static get className() {
