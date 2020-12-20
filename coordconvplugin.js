@@ -217,10 +217,12 @@ class AddCounter extends tf.layers.Layer {
           res[0]=res[0].reshape([r[0],r[1]*r[2]*r[3]]);
         }
         else{
-          var r=res[0].shape;
-          res[0]=res[0].transpose([0,1,3,2]);
-          res[0]=res[0].reshape([r[0],r[1]*r[2], it_[0].shape[1],it_[0].shape[2]  ]);
+          var r=res[0].shape;//console.log(r)
+          res[0]=res[0].transpose([1,0,2,3]);
+          r=res[0].shape;//console.log(r,a.shape)
+          res[0]=res[0].reshape([r[0],r[1]*r[2], a.shape[1],a.shape[2]  ]);
           res[0]=res[0].transpose([0,2,3,1]);
+          r=res[0].shape;//console.log(r)
         }
       }
      
