@@ -104,6 +104,7 @@ tf.serialization.registerClass(AddScalar);  // Needed for serialization.
     weight: multiply the input by this before processing
     scale: multiply the output by this before sending
     slope: (default:100) steepness of error tolerance 
+    useSum: (default:true) returns the sum of occurences. Otherwise, replace the found value with 1
     
     find:Array of values to find
  if find not used:
