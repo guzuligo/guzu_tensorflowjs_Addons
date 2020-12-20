@@ -1,4 +1,4 @@
-//ver 1.2b
+//ver 1.2d
 class AddCoords extends tf.layers.Layer {
     //Idea from Uber
     static get className() {
@@ -132,6 +132,7 @@ class AddCounter extends tf.layers.Layer {
       this.weight=args.weight||1;// should be |10
       this.scale=args.scale||1;
       this.slope=args.slope||100
+      this.useSum=args.useSum===undefined?true:args.useSum;
       this._createFindValues();
         
       //this.find=this.find.map(e=>[[e]]);
@@ -156,30 +157,36 @@ class AddCounter extends tf.layers.Layer {
     computeOutputShape(inputShape) {//TODO
       //var
       var outputshape;
-        
-      if(inputShape.length<3)
-        outputshape= [inputShape[0],this.find.length];
-      else
-          outputshape=[inputShape[0], inputShape[inputShape.length-1],this.units/*+2*/];
+      if(this.useSum){
+        if(inputShape.length!=4)
+          outputshape= [inputShape[0],this.find.length];
+        else//use channel
+            outputshape=[inputShape[0], inputShape[inputShape.length-1],this.units/*+2*/];
+      }else{
+        if(inputShape.length!=4)
+          outputshape= [inputShape[0],inputShape[1]*this.find.length];
+        else//use channel
+            outputshape=[inputShape[0],inputShape[1],inputShape[2], inputShape[3]*this.units];
+      }
       //console.log("SHAPE:",outputshape)
       return outputshape;
     }
      
     call(it_, kwargs){
       this.invokeCallHook(it_, kwargs);
-      var it=Array.isArray(it_)?it_[0]:it_;//missed up and needs fixing
+      //var it=Array.isArray(it_)?it_[0]:it_;//missed up and needs fixing
       //it_[0].print();
-      //this._dim=this.values.length;
+      
       var res,a;//=it_;
       res=it_;
       a=it_[0];
-      
+      var dim=res[0].shape.length;
       
       
       var prem;
       //if(false)
-      switch(res[0].shape.length){
-        case 4:
+      switch(dim){
+        case 4://make channel first and flatten the rest
           res[0]=res[0].transpose([0,3,1,2]).reshape([a.shape[0],a.shape[3],a.shape[1]*a.shape[2]]);
           prem=[1,0,2];
           //console.log("o0o:4");
@@ -187,19 +194,36 @@ class AddCounter extends tf.layers.Layer {
         case 3://TODO
           res[0]=res[0]//.transpose(prem=[0,2,1])//
             .reshape([a.shape[0],a.shape[1]*a.shape[2]]);
-          console.log("Shape dim 3 not ready. //TODO: Testing");//res[0].print();
+          //console.log("Shape dim 3 not ready. //TODO: Testing");//res[0].print();
           break;
         case 2:
-       // console.log("o0o")
+        //console.log("o0o")
           //console.log("o0o:2");
           break;
       }
       //res[0].print()
       res[0]=it_[0].mul(tf.scalar(this.weight)).sub(tf.tensor(this.find)).mul(this.slope).pow(2).mul(tf.scalar(-1)).sigmoid().mul(this.scale*2);
       
-      res[0]=res[0].sum(-1);//.round();
+      if (this.useSum){
+        res[0]=res[0].sum(-1);//.round();
+        res[0]=res[0].transpose(prem);//res[0].print()
+      }
+      else{
+        
+        if(dim!=4){//WIP
+          res[0]=res[0].transpose([2,1,0,3]);
+          var r=res[0].shape;//console.log(r)
+          res[0]=res[0].reshape([r[0],r[1]*r[2]*r[3]]);
+        }
+        else{
+          var r=res[0].shape;
+          res[0]=res[0].transpose([0,1,3,2]);
+          res[0]=res[0].reshape([r[0],r[1]*r[2], it_[0].shape[1],it_[0].shape[2]  ]);
+          res[0]=res[0].transpose([0,2,3,1]);
+        }
+      }
      
-      res[0]=res[0].transpose(prem);//res[0].print()
+      
       //res[0].print();
         //res[0]=res[0].expandDims(0);
         //res[0]=res[0].mul(this.scale);
