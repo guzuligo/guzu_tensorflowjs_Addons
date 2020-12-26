@@ -1,5 +1,8 @@
-//Ver 0.1.144
+//Ver 0.1.147
 //idea: atob() and btoa() //from window. encode decode base64
+
+if(!window._guzuTF)window._guzuTF={};
+
 class GuzuFileTools {
     /*
     inputId="";
@@ -167,6 +170,13 @@ class GuzuFileTools {
         //console.log(options);
         var i,j,tmp;
         var imd=targetImageData;
+        //if Canvas provided, use it
+        if(targetImageData.nodeName){
+          imd=imd.getContext('2d').getImageData(
+            options.x|| 0,options.y|| 0,
+            options.w || imd.width,
+            options.h || imd.height);
+        }
         var o=sourceData;
         for (i=0;i<o.length/mx;i++){
             j=0;
@@ -182,6 +192,11 @@ class GuzuFileTools {
             tmp=imd.data[i*4+3]=tmp=((options.c&8)===0)?255:
                     o[i*mx+j++]*options.m+options.a;
         };
+      
+      //if canvas provided, use it
+      if(targetImageData.nodeName)
+        targetImageData.getContext('2d').putImageData(imd,options.x|| 0,options.y|| 0);
+      
     }
     
     
@@ -401,7 +416,7 @@ class GuzuFileTools {
 /*
  * Accepts both ranges and two arrays of ranges
 */
-class GuzuTfTools{
+window._guzuTF.GuzuTfTools=class GuzuTfTools{
   layerMapper(applyto,low1,high1,low2,high2){
       
       if (Array.isArray(low1)){
@@ -426,22 +441,43 @@ class GuzuTfTools{
     
   }
   
-  //multiplies the previous layer
+  map(low1,high1,low2,high2){
+    var t=this;
+    return{
+      apply:function(applyto){
+        return t.layerMapper(applyto,low1,high1,low2,high2);
+      }
+    }
+  }
+  
+  pass(topass,toblock){
+    var t=this;
+    return{
+      apply:function(applyto){
+        return t.layerPass(applyto,topass,toblock);
+      }
+    }
+  }
+  
+  
+  
+  //multiplies the previous layer by constant
   mul(val,bias){
     var m={
       v:val===undefined?-1:val,
       b:bias?bias:0,
       apply:function(applyto){
         var tool="conv"+(applyto.rank-2)+"d";
-        console.log(applyto);
-        console.log(tool);
+        //console.log(applyto);
+        //console.log(tool);
         //if (applyto.shape)
-        applyto=tf.layers[tool]({kernelSize:1,filters:applyto.shape[applyto.shape.length-1],
+        var result=tf.layers[tool]({kernelSize:1,filters:applyto.shape[applyto.shape.length-1],
                                  trainable:false,
                           kernelInitializer:tf.initializers.constant({value:this.v}),
                           biasInitializer:tf.initializers.constant({value:this.b})
-                         }).apply(applyto);
-        return applyto;
+                         });
+        result.name=result.name.replace('conv','multiply')
+        return result.apply(applyto);
       }
     }
     
@@ -453,7 +489,14 @@ class GuzuTfTools{
     return {
       apply:function(applyto){
         var a1=t.mul(-1,bias).apply(applyto[1]);
-        return tf.layers.add().apply([applyto[0],a1]);
+        var add=tf.layers.add();
+        add.name=add.name.replace('add','subtract')
+        //add.name=add.name.replace('Add','Subtract')
+        //console.log("SUB",add)
+        a1=add.apply([applyto[0],a1]);
+        
+        
+        return a1;
       }
     };
   }
@@ -461,3 +504,9 @@ class GuzuTfTools{
   
   
 }
+window._guzuTF.guzuTfTools=new window._guzuTF.GuzuTfTools();
+
+tf.layers.sub=window._guzuTF.guzuTfTools.sub;
+tf.layers.mul=window._guzuTF.guzuTfTools.mul;
+tf.layers.map=window._guzuTF.guzuTfTools.map;
+tf.layers.pass=window._guzuTF.guzuTfTools.pass;
