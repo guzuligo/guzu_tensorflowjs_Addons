@@ -1,3 +1,5 @@
+//ver 0.9
+if(!window._guzuTF)window._guzuTF={};
 /*
 class fixedDepthwiseConv2d extends tf.layers.Layer{
     static get className() {
@@ -26,49 +28,76 @@ class fixedDepthwiseConv2d extends tf.layers.Layer{
 tf.serialization.registerClass(fixedDepthwiseConv2d);
 */
 
-class effectLayers {
+tf.layers.effect=class effectLayers {
 
     
-
+    /*
+    * @param {Number} kwargs.normalize Make sure the maximum number doesn't exceed this
+    * @param {Number} kwargs.magnify Multiplies the final result afterwards
+    * @param {Number} kwargs.fade The further away, exponential decay for blur, multiply minus for edge
+    
+    
+    */
     static blur(kwargs={}){
         if(kwargs.trainable===undefined)kwargs.trainable=false;
+      
         if(kwargs.useBias===undefined)kwargs.useBias=false;
-        
-        kwargs.depthwiseInitializer= new fixedInitializer({
+        if(typeof(kwargs.useBias)!='boolean'){kwargs.biasInitializer=kwargs.useBias;kwargs.useBias=true;}
+      
+        if(!isNaN(kwargs.biasInitializer))//if the initializer is a number, use it
+          kwargs.biasInitializer=tf.initializers.constant({value:kwargs.biasInitializer});      
+        kwargs.depthwiseInitializer= tf.initializers.fixed({
             normalize:kwargs.normalize,
             fade:kwargs.fade,
             magnify:kwargs.magnify,
             type:'blur'
         });
-        return l.depthwiseConv2d(kwargs);
+        return tf.layers.depthwiseConv2d(kwargs);
     }
 
     static edge(kwargs={}){
         if(kwargs.trainable===undefined)kwargs.trainable=false;
+        //
         if(kwargs.useBias===undefined)kwargs.useBias=true;
-
+        if(typeof(kwargs.useBias)!='boolean'){kwargs.biasInitializer=kwargs.useBias;kwargs.useBias=true;}
+        
+        
         if(kwargs.biasInitializer===undefined)kwargs.biasInitializer=tf.initializers.constant({value:.5});
-        kwargs.depthwiseInitializer= new fixedInitializer({
+        else
+        if(!isNaN(kwargs.biasInitializer))//if the initializer is a number, use it
+          kwargs.biasInitializer=tf.initializers.constant({value:kwargs.biasInitializer});
+        kwargs.depthwiseInitializer= tf.initializers.fixed({
             normalize:kwargs.normalize,
             fade:kwargs.fade,
             magnify:kwargs.magnify,
             type:'edge'
         });
-        return l.depthwiseConv2d(kwargs);
+        return tf.layers.depthwiseConv2d(kwargs);
     }
-
+  
+  //TODO:needs testing. Replaces padding
+    static border(inputLayer_){
+      return {
+        input:inputLayer_,
+        apply:function(target){
+          if (!Array.isArray(target))target=[target];
+          //console.log("++",inputLayer_);
+          return tf.layers.effect.padding(target[1] || this.input  ,  target[0]).apply(target[0]);
+        }
+      }
+    }
     //requires applied layers
     static padding(inputLayer_,lastLayer_){
         var bb=lastLayer_;
         var b0=[inputLayer_.shape[1],inputLayer_.shape[2]];
         var s_=[(b0[0]-bb.shape[1])*.5,(b0[1]-bb.shape[2])*.5];
-        return l.zeroPadding2d({padding:[[s_[0],s_[0]],[s_[1],s_[1]]]});
+        return tf.layers.zeroPadding2d({padding:[[s_[0],s_[0]],[s_[1],s_[1]]]});
     }
 }
 
 
 
-class fixedInitializer extends tf.serialization.Serializable{
+window._guzuTF.fixedInitializer=class fixedInitializer extends tf.serialization.Serializable{
     
     static className = 'FixedInitializer';
     static config={normalize:1,fade:1,magnify:1,type:'blur'};
@@ -251,4 +280,5 @@ class fixedInitializer extends tf.serialization.Serializable{
 
 }
 
-tf.serialization.registerClass(fixedInitializer);
+tf.serialization.registerClass(window._guzuTF.fixedInitializer);
+tf.initializers.fixed=(args)=>new window._guzuTF.fixedInitializer(args);
