@@ -1,6 +1,7 @@
-//Ver 0.1.3
+//Ver 0.1.4
 //Helps creating multipath model
-class TFLayerPath{
+if(!window._guzuTF)window._guzuTF={};
+window._guzuTF.TFLayerPath=class TFLayerPath{
   
   constructor(name=""){
     this.layerPath=[];
@@ -148,3 +149,4 @@ class TFLayerPath{
   
   
 }
+tf.util.path=(name)=>{return new window._guzuTF.TFLayerPath(name);}
