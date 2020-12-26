@@ -1,5 +1,6 @@
-//ver 1.2f
-class AddCoords extends tf.layers.Layer {
+//ver 1.3
+if(!window._guzuTF)window._guzuTF={};
+window._guzuTF.AddCoords=class AddCoords extends tf.layers.Layer {
     //Idea from Uber
     static get className() {
         return 'AddCoords';
@@ -58,14 +59,14 @@ class AddCoords extends tf.layers.Layer {
 }
 //var tmp_;
 
-tf.serialization.registerClass(AddCoords);  // Needed for serialization.
+tf.serialization.registerClass(window._guzuTF.AddCoords);  // Needed for serialization.
 //export function guzuCoordConv() {return new GuzuCoordConv();}
 
 
 
 
 //to use: new AddScalar({values:[6,7]})
-class AddScalar extends tf.layers.Layer {
+window._guzuTF.AddScalar=class AddScalar extends tf.layers.Layer {
     
     static className='AddScalar';
     
@@ -95,7 +96,7 @@ class AddScalar extends tf.layers.Layer {
     }
 }
 
-tf.serialization.registerClass(AddScalar);  // Needed for serialization.
+tf.serialization.registerClass(window._guzuTF.AddScalar);  // Needed for serialization.
 
 
 //epic win
@@ -112,7 +113,7 @@ tf.serialization.registerClass(AddScalar);  // Needed for serialization.
     units: count of numbers to use in the range
    }
 */
-class AddCounter extends tf.layers.Layer {
+window._guzuTF.AddCounter=class AddCounter extends tf.layers.Layer {
     
     //static className='AddCounter';
     static get className() {
@@ -229,4 +230,62 @@ class AddCounter extends tf.layers.Layer {
     }
 }
 
-tf.serialization.registerClass(AddCounter);  // Needed for serialization.
+tf.serialization.registerClass(window._guzuTF.AddCounter);  // Needed for serialization.
+
+
+//TODO: Test Everything
+window._guzuTF.SumPooling2d=class SumPooling2d extends tf.layers.Layer {
+  static get className() {
+        return 'SumPooling2d';
+    }
+  constructor(args) {
+      args=args||{};
+      args.trainable=false;
+      super(args);
+    this.strides=args.strides?(
+      Array.isArray(args.strides)?args.strides:[args.strides,args.strides]):[1,1];
+    this.padding=args.padding||'valid';
+    this.poolSize=!args.poolSize?[1,1]:Array.isArray(args.poolSize)?args.poolSize:[args.poolSize,args.poolSize];
+    
+    this.__={};
+    
+  }
+  
+  computeOutputShape(inputShape) {
+    switch(this.padding){
+      case 'valid':
+        var x=~~((inputShape[1]-this.poolSize[0])/this.strides[0]+1);
+        var y=~~((inputShape[2]-this.poolSize[1])/this.strides[1]+1);
+         console.log("ee")
+        return [inputShape[0],x,y,inputShape[3]];
+      case 'same':
+        return [inputShape[0],Math.ceil(inputShape[1]/this.strides[0]),Math.ceil(inputShape[2]/this.strides[1]),inputShape[3]];
+      default:
+      return inputShape;
+    }
+  }
+  
+  call(it, kwargs){ 
+    it=Array.isArray(it)?it[0]:it;
+    var ones=this.makeOnes(it.shape[3]);
+    //ones.print();
+    var out=it.depthwiseConv2d(ones,this.strides,this.padding);//console.log("S:",out.shape)
+    return out;
+  }//call
+  
+  makeOnes(channels_=1){
+    return this.__.ones || (this.__.ones=tf.keep(tf.ones(
+      this.poolSize.concat(channels_).concat(1)
+    )));//[2,2,3,1]);
+  }
+  
+}//SumPooling2D
+
+
+tf.serialization.registerClass(window._guzuTF.SumPooling2d);  // Needed for serialization.
+
+
+tf.layers.coord=(args)=>{return new window._guzuTF.AddCoords(args);};
+tf.layers.scalar=(args)=>{return new window._guzuTF.AddScalar(args);};
+tf.layers.counter=(args)=>{return new window._guzuTF.AddCounter(args);};
+tf.layers.sumPooling2d=(args)=>{return new window._guzuTF.SumPooling2d(args);};
