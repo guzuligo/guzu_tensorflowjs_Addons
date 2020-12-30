@@ -1,4 +1,4 @@
-//Ver 0.1.147
+//Ver 0.1.147b
 //idea: atob() and btoa() //from window. encode decode base64
 
 if(!window._guzuTF)window._guzuTF={};
@@ -162,6 +162,8 @@ class GuzuFileTools {
         if (options.m===undefined)options.m=1;
         if (options.a===undefined)options.a=0;
         
+        if(options.divide)options.m=options.divide;//does inverted action
+
         var mx =0;
         mx+=(options.c&1)===0?0:1;
         mx+=(options.c&2)===0?0:1;
