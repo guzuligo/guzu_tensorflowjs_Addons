@@ -1,4 +1,4 @@
-//ver 0.9
+//ver 0.9b
 if(!window._guzuTF)window._guzuTF={};
 /*
 class fixedDepthwiseConv2d extends tf.layers.Layer{
@@ -44,13 +44,17 @@ tf.layers.effect=class effectLayers {
         if(kwargs.useBias===undefined)kwargs.useBias=false;
         if(typeof(kwargs.useBias)!='boolean'){kwargs.biasInitializer=kwargs.useBias;kwargs.useBias=true;}
       
+        if(!kwargs.kernelSize)kwargs.kernelSize=[2,2];
+        if(!kwargs.strides)kwargs.strides=[1,1];
+        if(!kwargs.padding)kwargs.padding='same';
+
         if(!isNaN(kwargs.biasInitializer))//if the initializer is a number, use it
           kwargs.biasInitializer=tf.initializers.constant({value:kwargs.biasInitializer});      
         kwargs.depthwiseInitializer= tf.initializers.fixed({
             normalize:kwargs.normalize,
             fade:kwargs.fade,
             magnify:kwargs.magnify,
-            type:'blur'
+            type:'blur',
         });
         return tf.layers.depthwiseConv2d(kwargs);
     }
@@ -60,7 +64,9 @@ tf.layers.effect=class effectLayers {
         //
         if(kwargs.useBias===undefined)kwargs.useBias=true;
         if(typeof(kwargs.useBias)!='boolean'){kwargs.biasInitializer=kwargs.useBias;kwargs.useBias=true;}
-        
+        if(!kwargs.kernelSize)kwargs.kernelSize=[2,2];
+        if(!kwargs.strides)kwargs.strides=[1,1];
+        if(!kwargs.padding)kwargs.padding='same';
         
         if(kwargs.biasInitializer===undefined)kwargs.biasInitializer=tf.initializers.constant({value:.5});
         else
@@ -70,7 +76,7 @@ tf.layers.effect=class effectLayers {
             normalize:kwargs.normalize,
             fade:kwargs.fade,
             magnify:kwargs.magnify,
-            type:'edge'
+            type:'edge',
         });
         return tf.layers.depthwiseConv2d(kwargs);
     }

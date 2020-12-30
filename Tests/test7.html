@@ -24,9 +24,12 @@
         <script>
             var p=tf.util.path();
            
-            p.add("in",l.input({shape:[64,64,3]}))
-            p.to('bb',l.effect.blur({kernelSize:[4,4],strides:[2,2]}))
-            p.to('b',l.effect.border(p.get('in')));
+            p.add("in",l.input({shape:[64,64,3]}));
+            p.to("m",l.mutate2d({rotation:.1,offset:[.5,.5]}));
+            //p.to('bb',l.effect.edge({kernelSize:[11,11]
+            //    ,strides:[3,3],fade:15,padding:'valid'}))
+           // p.to('ww',)
+            //p.to('b',l.effect.border(p.get('in')));
             var m=tf.model({inputs:[p.get('in')],outputs:[p.apply()]});
 
             var gt;function onBodyLoaded(){
@@ -34,9 +37,11 @@
                 
             }
             
-            function test(num=0){
+            function test(num=0,a,b){
                 gt.getImagePixels(num,(e)=>{
-                    m.predict(tf.tensor([e.data])).data().then((d)=>{
+                    var e=tf.tensor([e.data]);
+                    //e=tf.image.rotateWithOffset(e,a||.3,0,b||[0.4,0.5]);
+                    m.predict(e).data().then((d)=>{
                         gt.NNSetImage(d,$("c"),normalize);
                         
                     });

@@ -1,4 +1,4 @@
-//ver 1.3
+//ver 1.4
 if(!window._guzuTF)window._guzuTF={};
 window._guzuTF.AddCoords=class AddCoords extends tf.layers.Layer {
     //Idea from Uber
@@ -281,11 +281,75 @@ window._guzuTF.SumPooling2d=class SumPooling2d extends tf.layers.Layer {
   
 }//SumPooling2D
 
-
 tf.serialization.registerClass(window._guzuTF.SumPooling2d);  // Needed for serialization.
+
+window._guzuTF.Mutation2dInfo={};
+window._guzuTF.Mutation2d=class Mutation2d extends tf.layers.Layer{
+  static get className() {
+    return 'Mutation2d';
+  }
+  constructor(args) {
+    args=args||{};
+    args.trainable=false;
+    super(args);
+    var F=window._guzuTF.Mutation2dInfo;
+    var f;
+    //Record data if name is specified
+    if(!args.set && !args.get)args.set="$$DEFAULT$$";
+    this.set=args.set;
+    this.get=args.get;
+    this.fill=args.fill||0;
+    if (args.set){
+      f=F[this.set]={};
+      f.rotation=args.rotation||0;
+      f.offset=args.offset||[0,0];
+      if(!Array.isArray(f.offset))
+        f.offset=[f.offset,f.offset];
+    }
+
+    //use recorded data
+    //f=F[args.name||args.use];
+    //for(var i in f)
+    //  this[i]=f[i];
+
+  }//constructor
+
+  computeOutputShape(inputShape) {
+    return inputShape;
+  }
+
+  call(it, kwargs){ 
+    it=Array.isArray(it)?it[0]:it;
+    //ones.print();
+    var F=window._guzuTF.Mutation2dInfo;
+    var f=F[this.set||this.get];
+    if(this.set){
+      //randomize
+      //f=F[this.set];
+      f.r=f.rotation*(Math.random()*2-1);
+      f.x=f.offset[0]*(Math.random()*2-1)+0.5;
+      f.y=f.offset[0]*(Math.random()*2-1)+0.5;
+      //if f.fill is Array of 2 values, use random fill
+      if (Array.isArray(f.fill) && f.fill.length==2)f.f=[
+        Math.random()*(f.fill[1]-f.fill[0])+f.fill[0],
+        Math.random()*(f.fill[1]-f.fill[0])+f.fill[0],
+        Math.random()*(f.fill[1]-f.fill[0])+f.fill[0],
+      ];
+      else f.f=f.fill;
+      
+    }
+    var out=tf.image.rotateWithOffset(it,f.r,f.f,[f.x,f.y]);//console.log("S:",out.shape)
+    return out;
+  }//call
+}/////
+
+
+tf.serialization.registerClass(window._guzuTF.Mutation2d);  // Needed for serialization.
+
 
 
 tf.layers.coord=(args)=>{return new window._guzuTF.AddCoords(args);};
 tf.layers.scalar=(args)=>{return new window._guzuTF.AddScalar(args);};
 tf.layers.counter=(args)=>{return new window._guzuTF.AddCounter(args);};
 tf.layers.sumPooling2d=(args)=>{return new window._guzuTF.SumPooling2d(args);};
+tf.layers.mutate2d=(args)=>{return new window._guzuTF.Mutation2d(args);};
