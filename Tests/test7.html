@@ -4,6 +4,7 @@
         <script src='../TFLayerPath.js'></script>
         <script src='../coordconvplugin.js'></script>
         <script src="../GuzuDataTools.js"></script>
+        <script src="../layerFixedConv2d.js"></script>
         <script>
             //shortcut varialbes
             var cropSize=64;var C=1+(2+4),Cx=3;var scale=.1
@@ -24,7 +25,8 @@
             var p=tf.util.path();
            
             p.add("in",l.input({shape:[64,64,3]}))
-            
+            p.to('bb',l.effect.blur({kernelSize:[4,4],strides:[2,2]}))
+            p.to('b',l.effect.border(p.get('in')));
             var m=tf.model({inputs:[p.get('in')],outputs:[p.apply()]});
 
             var gt;function onBodyLoaded(){
@@ -34,9 +36,9 @@
             
             function test(num=0){
                 gt.getImagePixels(num,(e)=>{
-                    tf.tensor([e.data]).data().then((d)=>{
+                    m.predict(tf.tensor([e.data])).data().then((d)=>{
                         gt.NNSetImage(d,$("c"),normalize);
-                        console.log(d);
+                        
                     });
                 },normalize);
             }
