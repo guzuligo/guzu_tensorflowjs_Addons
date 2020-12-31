@@ -307,9 +307,19 @@ window._guzuTF.Mutation2d=class Mutation2d extends tf.layers.Layer{
       if(!Array.isArray(f.offset))
         f.offset=[f.offset,f.offset];
 
-      f.flip=args.flip;
+      f.flip=args.flip||false;
       f._flip=false;
-    }
+
+      var A=Array.isArray;
+
+      f.c=args.channels;//[add,multiply,min,max]
+      if(f.c){
+        if( !A(f.c))
+          f.c=[f.c];
+        while(f.c.length<4)
+          f.c.push([0,0,1][f.c.length-1]);
+      }
+    }//args.set
 
 
     //use recorded data
@@ -348,14 +358,28 @@ window._guzuTF.Mutation2d=class Mutation2d extends tf.layers.Layer{
       if(f.flip)
         f._flip=Math.random()>.5;
 
+      if(f.c)
+        f._c=[
+          (Math.random()*2-1)*f.c[0],
+          (Math.random()*2-1)*f.c[1]+1,
+          f.c[2],
+          f.c[3],
+        ]
 
     }//this.set
     var out=it;
+    if(f._c )
+      out=tf.minimum(
+        tf.onesLike(out).mul(f._c[3]),
+        tf.maximum(out.mul(f._c[1]).add(f._c[0]),tf.onesLike(out).mul(f._c[2]))
+      );
     if(f._flip)
       out=tf.image.flipLeftRight(out);
     if(f.rotation)
       out=tf.image.rotateWithOffset(out,f.r,f.f,[f.x,f.y]);//console.log("S:",out.shape)
 
+    
+      
     
     
     return out;
