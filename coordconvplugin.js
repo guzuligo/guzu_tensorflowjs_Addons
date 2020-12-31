@@ -296,8 +296,9 @@ window._guzuTF.Mutation2d=class Mutation2d extends tf.layers.Layer{
     var f;
     //Record data if name is specified
     if(!args.set && !args.get)args.set="$$DEFAULT$$";
-    this.set=args.set;
-    this.get=args.get;
+    this.set=args.set;//initiate setting
+    this.get=args.get;//use previous setting
+    this.flip=args.flip;//true false
     this.fill=args.fill||0;
     if (args.set){
       f=F[this.set]={};
@@ -305,7 +306,11 @@ window._guzuTF.Mutation2d=class Mutation2d extends tf.layers.Layer{
       f.offset=args.offset||[0,0];
       if(!Array.isArray(f.offset))
         f.offset=[f.offset,f.offset];
+
+      if(this.flip)
+        f.flip=Math.random()>.5;
     }
+
 
     //use recorded data
     //f=F[args.name||args.use];
@@ -326,19 +331,31 @@ window._guzuTF.Mutation2d=class Mutation2d extends tf.layers.Layer{
     if(this.set){
       //randomize
       //f=F[this.set];
-      f.r=f.rotation*(Math.random()*2-1);
-      f.x=f.offset[0]*(Math.random()*2-1)+0.5;
-      f.y=f.offset[0]*(Math.random()*2-1)+0.5;
-      //if f.fill is Array of 2 values, use random fill
-      if (Array.isArray(f.fill) && f.fill.length==2)f.f=[
-        Math.random()*(f.fill[1]-f.fill[0])+f.fill[0],
-        Math.random()*(f.fill[1]-f.fill[0])+f.fill[0],
-        Math.random()*(f.fill[1]-f.fill[0])+f.fill[0],
-      ];
-      else f.f=f.fill;
-      
+      //rotation effect
+      if(f.rotation){
+        f.r=f.rotation*(Math.random()*2-1);
+        f.x=f.offset[0]*(Math.random()*2-1)+0.5;
+        f.y=f.offset[0]*(Math.random()*2-1)+0.5;
+        //if f.fill is Array of 2 values, use random fill
+        if (Array.isArray(f.fill) && f.fill.length==2)f.f=[
+          Math.random()*(f.fill[1]-f.fill[0])+f.fill[0],
+          Math.random()*(f.fill[1]-f.fill[0])+f.fill[0],
+          Math.random()*(f.fill[1]-f.fill[0])+f.fill[0],
+        ];
+        else f.f=f.fill;
+      }//rotation
+
+
+
     }
-    var out=tf.image.rotateWithOffset(it,f.r,f.f,[f.x,f.y]);//console.log("S:",out.shape)
+    var out=it;
+    if(f.flip)
+      out=tf.image.flipLeftRight(out);
+    if(f.rotation)
+      out=tf.image.rotateWithOffset(out,f.r,f.f,[f.x,f.y]);//console.log("S:",out.shape)
+
+    
+    
     return out;
   }//call
 }/////
@@ -348,8 +365,45 @@ tf.serialization.registerClass(window._guzuTF.Mutation2d);  // Needed for serial
 
 
 
+//////
+window._guzuTF.TemporaryLayer=class TemporaryLayer extends tf.layers.Layer {
+  static get className() {
+        return 'Temporary';
+    }
+  constructor(args) {
+      args=args||{};
+      super(args);
+      this.__={};
+      for (var i in args){
+        this.__[i]=args[i];
+      }
+    
+  }
+  
+  computeOutputShape(inputShape) {
+    if(this.__.computeOutputShape)
+      return this.__.computeOutputShape(inputShape);
+    else 
+      return inputShape;
+  }
+  
+  call(it, kwargs){ 
+    it=Array.isArray(it)?it[0]:it;
+    return this.__.call(it,kwargs,this.__);
+  }//call
+  
+  
+}//SumPooling2D
+
+tf.serialization.registerClass(window._guzuTF.TemporaryLayer);  // Needed for serialization.
+
+
+
+
+
 tf.layers.coord=(args)=>{return new window._guzuTF.AddCoords(args);};
 tf.layers.scalar=(args)=>{return new window._guzuTF.AddScalar(args);};
 tf.layers.counter=(args)=>{return new window._guzuTF.AddCounter(args);};
 tf.layers.sumPooling2d=(args)=>{return new window._guzuTF.SumPooling2d(args);};
 tf.layers.mutate2d=(args)=>{return new window._guzuTF.Mutation2d(args);};
+tf.layers.temp=(args)=>{return new window._guzuTF.TemporaryLayer(args);};
