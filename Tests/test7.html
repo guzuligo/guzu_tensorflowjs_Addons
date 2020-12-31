@@ -22,10 +22,17 @@
 
         </script>
         <script>
+            var _add=1,_mul=1;
             var p=tf.util.path();
            
             p.add("in",l.input({shape:[64,64,3]}));
-            p.to("m",l.mutate2d({rotation:.1,offset:[.5,.5]}));
+            p.to("m",l.mutate2d({rotation:.1,offset:[.5,.5],flip:true}));
+            p.to("t",l.temp({call:(it,kwargs,me)=>{
+                var r=it.mul(_mul).add(_add);
+                r=tf.minimum(r,tf.onesLike(r).mul(.7));
+                r=tf.maximum(r,tf.onesLike(r).mul(.2));
+                return r;
+            }}));
             //p.to('bb',l.effect.edge({kernelSize:[11,11]
             //    ,strides:[3,3],fade:15,padding:'valid'}))
            // p.to('ww',)

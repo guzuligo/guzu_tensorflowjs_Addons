@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Making Template</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src='../google/tensorflow2.7.0.min.js'></script>
+        <script src='../TFLayerPath.js'></script>
+        <script src='../coordconvplugin.js'></script>
+        <script src="../GuzuDataTools.js"></script>
+        <script src="../layerFixedConv2d.js"></script>
+          <script>
+            function _(a){return document.getElementById(a)};
+            tf.enableProdMode();
+            //tf.setBackend("cpu");
+            var cropSize=128;var C,Cx=1;var scale=.5;C=2+(1+4)*(Cx==3?1:0)
+            var normalize={r:0,c:C,divide1:255,w:cropSize,h:cropSize,x:0,y:0,xscale:scale,yscale:scale,rescale:false};
+            var gt;
+            var c,cd;
+            var defaultInit=//'randomUniform';
+                            'randomNormal';
+            var defaultActivation='linear';var da=defaultActivation;
+            var inputActivation='relu6';
+            var _mse='meanSquaredError';
+            var _cce='categoricalCrossentropy';
+            var myloss=[_mse,_cce,'sparseCategoricalAccuracy',
+            (yTrue, yPred)=>tf.metrics.meanSquaredError(yTrue, yPred)]              
+            [0];
+            var lrm=1;//Learning rate multiplier
+            var bs=[]
+            var b=[];
+            var l=tf.layers;
+            var t=tf.tensor;
+            var undef=undefined;
+            var gtf=l;//new GuzuTfTools();
+            
+            var latSize=8;
+            
+            var p2=tf.util.path();
+            
+            p2.add("in1",l.input({shape:[16,16,Cx]}));
+            p2.to("in1up",l.upSampling2d({size:[8,8],name:"in1up"}));
+            p2.add("in2",l.input({shape:[latSize]}));
+            //First input
+            p2.add('i1c0',l.conv2d({kernelSize:[4,4],strides:[2,2],filters:Cx*4,name:"x4",activation:da}),'in1');
+            p2.add('i1c',l.conv2d({kernelSize:[4,4],strides:[2,2],filters:Cx*4*4,name:"x4x4",activation:da}),'i1c0');
+            p2.add('i1f',l.flatten({name:"i1f"}),'i1c');
+            p2.add('tolat',l.dense({units:latSize*1,activation:"tanh",name:"tolat"}),'i1f');
+            p2.add('lats',l.concatenate({name:"lats"}),['tolat','in2']);
+            //Lat Created
+            
+            
+            //
+            //Recreating for +
+            //
+            //p2.add('a0',l.dense({units:latSize*10,name:"a0"}),'lats');
+            
+            var D=[];
+            var cx=[];
+            var dn0;
+            var s =32;
+            var ss=s/2;
+            if(false){//unit
+            //p2.to('a',l.dense({units:16*16*Cx/4,name:"a1"}));
+            p2.to('a2',l.dense({units:16*16*Cx,name:"a2",activation:"tanh"}));
+            //p2.to('r',l.reshape({targetShape:[16,16,Cx]}));
+            //16X16 created
+            //p2.to('ct',l.conv2d({filters:32,kernelSize:[2,2],strides:[1,1]}));
+            //p2.to('ctp',l.maxPooling2d({poolSize:[4,4],strides:[3,3]}));
+            //p2.to('flatten1',l.flatten());
+            p2.to('dense',l.dense({units:128*128*Cx}));
+            p2.to('ct2',l.reshape({targetShape:[128,128,Cx]}));
+            // ,activation:"tanh"
+            }
+            else {
+              
+              for (i=0;i*ss*ss<128*128;i++){
+                
+                var d=-1;//depth
+                var dn=cx.length;
+                
+                //p2.add('qIn'+dn,l.dense({units:latSize,activation:da}),'lat');
+                p2.add('var'+dn,tf.layers.scalar({name:'v'+dn,values:
+                  [((i%s)-ss)/ss,(Math.floor(i/s)-ss)/ss,i/s/s]
+                }),"lats");//a0
+                
+                dn='depth'+dn+"-";
+                dn0=dn0||dn;
+                
+                //d++;p2.to(dn+d, p2.get(dn0+(d))||l.dense({units:Cx*16*16,name:"Ax5-"+dn+d}));
+                //d++;p2.to(dn+d, p2.get(dn0+(d))||l.reshape({targetShape:[2,2,Cx*8*8],name:"Bx8"+dn+d}));
+                //d++;p2.to(dn+d, p2.get(dn0+(d))||l.conv2dTranspose({kernelSize:[2,2],strides:[2,2],filters:Cx*4*4,name:"Cx8"+dn+d,activation:da}));
+                //d++;p2.to(dn+d, p2.get(dn0+(d))||l.conv2dTranspose({kernelSize:[8,8],strides:[16,16],filters:Cx*8*8,name:"C2x8"+dn+d,activation:da}));
+                //d++;p2.to(dn+d, p2.get(dn0+(d))||l.conv2dTranspose({kernelSize:[2,2],strides:[2,2],filters:Cx,name:"Dx8"+dn+d}));
+                
+                d++;p2.to(dn+d, p2.get(dn0+(d))||l.dense({units:ss*ss*Cx,name:"8x8xCx1"+dn+d,activation:"tanh"}));
+                //d++;p2.to(dn+d, p2.get(dn0+(d))||l.dense({units:ss*ss*Cx ,name:"8x8xCx2"+dn+d,activation:"linear"}));
+                //d++;p2.to(dn+d, p2.get(dn0+(d))||l.dense({units:ss*ss*Cx ,name:"8x8xCx3"+dn+d}));
+                d++;p2.to(dn+d, p2.get(dn0+(d))||l.dense({units:ss*ss*Cx,name:"8x8xCxout"+dn+d}));
+                
+                
+                d++;p2.to(dn+d, l.reshape({targetShape:[ss,ss,Cx],name:"reshape-"+dn+d}));
+                                d++;p2.to(dn+d, gtf.mul(10));
+                //console.log(dn+d)
+                cx.push(dn+d);
+              }
+              var ccx=[];
+              while (cx.length>0){
+                ccx.push(cx.splice(0,s));
+              }
+              for (i=0;i<ccx.length;i++){
+                p2.add("cx_"+i,l.concatenate({name:"cx_"+i,axis:1}),ccx[i]);  
+                cx.push("cx_"+i);
+              }
+              
+              p2.add('cx',l.concatenate({name:"cx",axis:2}),cx);
+              p2.to('ct2',l.reshape({targetShape:[128,128,Cx],name:"ct2"}));
+              /*
+              p2.to('ct2',l.conv2dTranspose({kernelSize:[ss,ss],strides:[128/ss,128/ss]
+                                             ,kernelInitializer:"ones",useBias:false,trainable:false
+                                             ,padding:"same",filters:Cx,name:"ct2"}));
+              */
+                   
+                   
+            }
+            
+            
+            p2.add('add',l.add(),['ct2','in1up']);
+           
+            //
+            //Compile drawM 
+            //
+            var drawM=tf.model({inputs:[p2.get("in1"),p2.get("in2")],outputs:[p2.apply()]});
+            drawM.compile({
+                optimizer: //tf.train.momentum(1e-4,0.95)
+                        tf.train.adam(0.0001*lrm,1e-8)//learning rate
+                ,loss: myloss
+                ,metrics:['accuracy']
+            });
+            
+            
+            
+            //
+            //=======
+            //
+            var p1=tf.util.path();
+            p1.add('in1',l.input({shape:[128,128,Cx]}));
+            p1.to('mu',l.mutate2d({rotation:.1,offset:.1}))
+            //blur output
+            p1.add('b',l.averagePooling2d({strides:[8,8],poolSize:[8,8],padding:'same',name:"BLUR"}),'in1')
+            p1.to('b_up',l.upSampling2d({size:[8,8]}));
+            //
+            p1.add('sub',gtf.sub(),['mu','b_up']);
+            p1.add('q1a',l.conv2d({kernelSize:[4,4],strides:[2,2],filters:Cx*10,name:"q1a"}),'sub');
+            p1.add('q1b',l.maxPooling2d({poolSize:[4,4],strides:[4,4],name:'q1b'}),'q1a');
+            p1.add('q1c',l.flatten({name:"q1c"}),'q1b');
+            //lattent output
+            p1.add('lat',l.dense({units:latSize,name:"lat",activation:"tanh"}),'q1c');
+            
+            
+            
+            
+            var intake=tf.model({inputs:[p1.get("in1")],outputs:[p1.apply()]});
+            
+            intake.compile({
+                optimizer: //tf.train.momentum(1e-4,0.95)
+                        tf.train.adam(0.0001*lrm,1e-8)//learning rate
+                ,loss: myloss
+                ,metrics:['accuracy']
+            });
+            
+            
+            
+            //====trainer
+            p2.replace('in1',p1.apply('b'));
+            p2.replace('in2',p1.apply('lat'))
+            
+            
+            var trainer=tf.model({inputs:[p1.get("in1")],outputs:[p2.apply()]});
+            
+            
+            
+            
+            
+            
+            var om=tf.train.momentum(1e-3,0.95,!true);
+            var oa=tf.train.adam(0.0001*lrm,1e-8);//learning rate
+            trainer.compile({
+                optimizer: om
+                ,loss: myloss
+                ,metrics:['accuracy']
+            });
+            
+            //
+            
+            
+          //console.log("trainer",trainer.summary());
+            
+            var t1;
+            function load(){
+              
+              var data=gt.NNDatasetFromImages(normalize)
+              gt.onload=()=>{
+                t1=tf.tensor(data.data[0]);
+              };
+            }
+            
+            var gt;
+            function init(){
+              gt=new GuzuFileTools("file");
+              gt.onload=(e)=>{
+                console.log(e)
+              }
+            }
+            function test(){predict(0);}
+            //var t1;
+            function predict(n=0){
+              //var imd=_('c1').getContext('2d').getImageData(0,0,128,128);
+              //tf.browser.fromPixels()
+              var miniPromis={Then:()=>{},then:function(f){this.Then=f}};
+              gt.getImagePixels(n,(e)=>{
+                var t1=tf.tensor([e.data]);
+                var t2=trainer.predict(t1).dataSync();
+                if(true){
+                  var c,c2;
+
+                  c2=(c=_('c1').getContext('2d')).getImageData(0,0,128,128);
+                  gt.NNSetImage(t1.dataSync(),c2,{w:128,h:128,c:C});
+                  c.putImageData(c2,0,0);
+                }
+                if(true){
+                  var c,c2;
+                  c2=(c=_('output').getContext('2d')).getImageData(0,0,128,128);
+                  gt.NNSetImage(t2,c2,{w:128,h:128,c:C});
+                  c.putImageData(c2,0,0);
+                }
+                
+                miniPromis.Then();
+                
+                
+              },
+              normalize//{  w:128,h:128,c:7}
+                               );
+              return miniPromis;
+              
+            }
+            
+            function train(eps=1){
+              _("stat").innerHTML="Training";
+              predict(0).then(()=>{
+              trainer.fit([t1],[t1],{epochs:eps,
+                                      callbacks: {onEpochEnd: (epoch, logs) => _("loss").innerHTML="LOSS: "+(logs.loss)}
+                                    }).then(()=>{console.log("======="+(_("stat").innerHTML="Done")+"=======");predict(0)});
+              })
+            }
+            
+            function stop(){
+              trainer.stopTraining=true;
+            }
+            
+            //testing
+            //*
+            var G =tf.input({shape:[2]})
+            var g2=tf.layers.scalar({values:[6,7]})
+            var G2=g2.apply(G)
+            var g3=tf.layers.scalar({values:[8]})
+            var G3=g3.apply(G2)
+            var q=tf.model({inputs:[G],outputs:[G3]});
+            //*/
+      </script>
+      <body onload="init()">
+        <input type="file" onchange="load()" id="file" multiple/>
+        <button onclick="train(5000)">Train</button><i id="stat">....</i><br>
+        <b id="loss">LOSS: </b><br>
+      c1:[<canvas id="c1" width="128px" height="128px"></canvas>]  
+      c2:[<canvas id="output" width="128px" height="128px"></canvas>]
+        
+      </body>
+  </head>
+</html>

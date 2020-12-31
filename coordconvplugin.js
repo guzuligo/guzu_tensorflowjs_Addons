@@ -307,8 +307,8 @@ window._guzuTF.Mutation2d=class Mutation2d extends tf.layers.Layer{
       if(!Array.isArray(f.offset))
         f.offset=[f.offset,f.offset];
 
-      if(this.flip)
-        f.flip=Math.random()>.5;
+      f.flip=args.flip;
+      f._flip=false;
     }
 
 
@@ -345,11 +345,13 @@ window._guzuTF.Mutation2d=class Mutation2d extends tf.layers.Layer{
         else f.f=f.fill;
       }//rotation
 
+      if(f.flip)
+        f._flip=Math.random()>.5;
 
 
-    }
+    }//this.set
     var out=it;
-    if(f.flip)
+    if(f._flip)
       out=tf.image.flipLeftRight(out);
     if(f.rotation)
       out=tf.image.rotateWithOffset(out,f.r,f.f,[f.x,f.y]);//console.log("S:",out.shape)
@@ -398,6 +400,98 @@ window._guzuTF.TemporaryLayer=class TemporaryLayer extends tf.layers.Layer {
 tf.serialization.registerClass(window._guzuTF.TemporaryLayer);  // Needed for serialization.
 
 
+/*
+ * Accepts both ranges and two arrays of ranges
+*/
+window._guzuTF.GuzuTfTools=class GuzuTfTools{
+  layerMapper(applyto,low1,high1,low2,high2){
+      
+      if (Array.isArray(low1)){
+        low2=high1[0];high2=high1[1];
+        high1=low1[1];low1=low1[0];
+      }
+      applyto=tf.layers.reshape({targetShape:[applyto.shape[1],1]}).apply(applyto);
+      applyto=tf.layers.conv1d({kernelSize:[1],filters:1,trainable:false,
+                          kernelInitializer:tf.initializers.constant({value:1}),
+                          biasInitializer:tf.initializers.constant({value:-low1})
+                         }).apply(applyto);
+      applyto=tf.layers.conv1d({kernelSize:[1],filters:1,trainable:false,
+                          kernelInitializer:tf.initializers.constant({value:(low2-high2)/(low1-high1)}),
+                          biasInitializer:tf.initializers.constant({value:+low2})
+                         }).apply(applyto);
+      return tf.layers.flatten().apply(applyto);
+    }
+  //applyto didn't use apply yet. Others should have already been applied
+  layerPass(applyto,topass,toblock){
+    var c1=applyto.apply( tf.layers.concatenate().apply([topass,toblock]) );
+    return tf.layers.concatenate().apply([c1,topass]);
+    
+  }
+  
+  map(low1,high1,low2,high2){
+    var t=this;
+    return{
+      apply:function(applyto){
+        return t.layerMapper(applyto,low1,high1,low2,high2);
+      }
+    }
+  }
+  
+  pass(topass,toblock){
+    var t=this;
+    return{
+      apply:function(applyto){
+        return t.layerPass(applyto,topass,toblock);
+      }
+    }
+  }
+  
+  
+  
+  //multiplies the previous layer by constant
+  mul(val,bias){
+    var m={
+      v:val===undefined?-1:val,
+      b:bias?bias:0,
+      apply:function(applyto){
+        var tool="conv"+(applyto.rank-2)+"d";
+        //console.log(applyto);
+        //console.log(tool);
+        //if (applyto.shape)
+        var result=tf.layers[tool]({kernelSize:1,filters:applyto.shape[applyto.shape.length-1],
+                                 trainable:false,
+                          kernelInitializer:tf.initializers.constant({value:this.v}),
+                          biasInitializer:tf.initializers.constant({value:this.b})
+                         });
+        result.name=result.name.replace('conv','multiply')
+        return result.apply(applyto);
+      }
+    }
+    
+    return m;
+  }
+  
+  sub(bias){
+    var t=this;
+    return {
+      apply:function(applyto){
+        var a1=t.mul(-1,bias).apply(applyto[1]);
+        var add=tf.layers.add();
+        add.name=add.name.replace('add','subtract')
+        //add.name=add.name.replace('Add','Subtract')
+        //console.log("SUB",add)
+        a1=add.apply([applyto[0],a1]);
+        
+        
+        return a1;
+      }
+    };
+  }
+  
+  
+  
+}
+window._guzuTF.guzuTfTools=new window._guzuTF.GuzuTfTools();
 
 
 
@@ -407,3 +501,8 @@ tf.layers.counter=(args)=>{return new window._guzuTF.AddCounter(args);};
 tf.layers.sumPooling2d=(args)=>{return new window._guzuTF.SumPooling2d(args);};
 tf.layers.mutate2d=(args)=>{return new window._guzuTF.Mutation2d(args);};
 tf.layers.temp=(args)=>{return new window._guzuTF.TemporaryLayer(args);};
+
+tf.layers.sub=window._guzuTF.guzuTfTools.sub;
+tf.layers.mul=window._guzuTF.guzuTfTools.mul;
+tf.layers.map=window._guzuTF.guzuTfTools.map;
+tf.layers.pass=window._guzuTF.guzuTfTools.pass;
