@@ -368,7 +368,7 @@ window._guzuTF.Mutation2d=class Mutation2d extends tf.layers.Layer{
 
     }//this.set
     var out=it;
-    if(f._c )
+    if(f._c)
       out=tf.minimum(
         tf.onesLike(out).mul(f._c[3]),
         tf.maximum(out.mul(f._c[1]).add(f._c[0]),tf.onesLike(out).mul(f._c[2]))
@@ -378,10 +378,12 @@ window._guzuTF.Mutation2d=class Mutation2d extends tf.layers.Layer{
     if(f.rotation)
       out=tf.image.rotateWithOffset(out,f.r,f.f,[f.x,f.y]);//console.log("S:",out.shape)
 
-    
+
+
+
+
+
       
-    
-    
     return out;
   }//call
 }/////
