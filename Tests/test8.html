@@ -1,0 +1,103 @@
+<html>
+    <head>
+        <script src='../google/tensorflow2.7.0.min.js'></script>
+        <script src='../TFLayerPath.js'></script>
+        <script src='../coordconvplugin.js'></script>
+        <script src="../GuzuDataTools.js"></script>
+        <script src="../layerFixedConv2d.js"></script>
+        <script>
+            //shortcut varialbes
+            var cropSize=64;var C=1+(2+4),Cx=3;var scale=1
+            var normalize={r:0,c:C,divide:255,w:cropSize,h:cropSize,x:0,y:0,xscale:scale,yscale:scale,rescale:false};
+
+            var defaultActivation='tanh';
+            var inputActivation='relu6';
+            var outputActivation='sigmoid';
+            var _mse='meanSquaredError';
+            var _cce='categoricalCrossentropy';
+            var lrm=1;//Learning rate multiplier
+            var l=tf.layers;
+            var t=tf.tensor;
+            var myloss=_mse//(Y,y)=>Y.sub(y).pow(4);//tf.losses.absoluteDifference//'logLoss';
+
+        </script>
+        <script>
+            var _add=1,_mul=1;
+            var p=tf.util.path();
+           
+            p.add("in",l.input({shape:[64*2,64*2,3]}));
+            p.to("m",l.mutate2d({rotation:.1,offset:[.5,.5],flip:true,channels:[.2,.2,0,1]}));
+            p.to("blur",l.effect.blur({kernelSize:[4,4],strides:[2,2]}));
+            
+            /*
+            p.to("t",l.temp({call:(it,kwargs,me)=>{
+                var r=it.mul(_mul).add(_add);
+                r=tf.minimum(r,tf.onesLike(r).mul(.7));
+                r=tf.maximum(r,tf.onesLike(r).mul(.2));
+                return r;
+            }}));
+            */
+            //p.to('bb',l.effect.edge({kernelSize:[11,11]
+            //    ,strides:[3,3],fade:15,padding:'valid'}))
+           // p.to('ww',)
+            p.to('b',l.effect.border(
+                l.input({shape:[64,64,3]})
+            ));
+            var m=tf.model({inputs:[p.get('in')],outputs:[p.apply()]});
+
+            var gt;function onBodyLoaded(){
+                gt =new GuzuFileTools("files");
+                
+            }
+            
+            function test(num=0,a,b){
+                var n=Object.assign({},normalize);
+                n.w=n.h*=2;
+                gt.getImagePixels(num,(e)=>{
+                    var e=tf.tensor([e.data]);
+                    //e=tf.image.rotateWithOffset(e,a||.3,0,b||[0.4,0.5]);
+                    m.predict(e).data().then((d)=>{
+                        gt.NNSetImage(d,$("c"),normalize);
+                        
+                    });
+                },n);
+                console.log(n)
+            }
+
+            var input;
+            function makeData(){
+                var re=gt.NNDatasetFromImages(normalize);
+                gt.onload=()=>{
+                    input=tf.tensor(re.data[0]);
+                };
+            }
+           
+        </script>
+        <script>
+            function lr(newLearningRate){
+                if(newLearningRate)
+                    m.optimizer.learningRate=newLearningRate;
+            }
+
+            function $(id){return document.getElementById(id);}
+            
+            function getVar(varName){
+                return new URLSearchParams(window.location.search).get(varName);
+            }
+
+            function stop(){
+                m.stopTraining=true;
+            }
+
+        </script>
+    </head>
+    <body onload="onBodyLoaded();">
+        <input type="file" id="files" onchange="makeData();" /><button onclick="testEvaluate()">evaluate</button> <small id='ev'></small><br>
+        <button onclick="testTrain('epochs')">Train</button>
+        
+        <input id='epochs' size=1 value=55></input><small id='counter'>Epochs</small>
+        <br>Accuricy: <i id='acc'></i>
+        <canvas id="c" width=64px height=64px></canvas>
+        
+    </body>
+</html>
