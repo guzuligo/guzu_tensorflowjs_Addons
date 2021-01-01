@@ -25,10 +25,11 @@
             var _add=1,_mul=1;
             var p=tf.util.path();
            
-            p.add("in",l.input({shape:[64*2,64*2,3]}));
+            p.add("in",l.input({shape:[64,64,3]}));
+            p.to("up",l.upSampling2d({size:[4,4]}));
             p.to("m",l.mutate2d({rotation:.1,offset:[.5,.5],flip:true,channels:[.2,.2,0,1]}));
-            p.to("blur",l.effect.blur({kernelSize:[4,4],strides:[2,2]}));
-            
+            p.to("blur",l.effect.blur({kernelSize:[8,8],strides:[4,4]}));
+            //p.to("down",l.upSampling2d({size:[2,2]}));
             /*
             p.to("t",l.temp({call:(it,kwargs,me)=>{
                 var r=it.mul(_mul).add(_add);
@@ -41,7 +42,7 @@
             //    ,strides:[3,3],fade:15,padding:'valid'}))
            // p.to('ww',)
             p.to('b',l.effect.border(
-                l.input({shape:[64,64,3]})
+                p.get("in")//l.input({shape:[64,64,3]})
             ));
             var m=tf.model({inputs:[p.get('in')],outputs:[p.apply()]});
 
@@ -52,16 +53,18 @@
             
             function test(num=0,a,b){
                 var n=Object.assign({},normalize);
-                n.w=n.h*=2;
-                gt.getImagePixels(num,(e)=>{
-                    var e=tf.tensor([e.data]);
+                //n.w=n.h*=2;
+                gt.getImagePixels(num,(e)=>{tf.tidy(()=>{
+                    //var e=tf.tensor([e.data]);
                     //e=tf.image.rotateWithOffset(e,a||.3,0,b||[0.4,0.5]);
-                    m.predict(e).data().then((d)=>{
+                    m.predict(tf.tensor([e.data])).data().then((d)=>{
                         gt.NNSetImage(d,$("c"),normalize);
-                        
+                        //e.dispose();
+                        //pr.dispose();
+                        console.log(tf.memory());
                     });
-                },n);
-                console.log(n)
+                });},n);
+                //console.log(n)
             }
 
             var input;
