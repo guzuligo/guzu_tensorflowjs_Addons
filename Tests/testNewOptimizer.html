@@ -1,0 +1,62 @@
+<html>
+    <script src='../google/tensorflow2.7.0.min.js'></script>
+        <script src='../TFLayerPath.js'></script>
+        <script src='../coordconvplugin.js'></script>
+        <script src="../GuzuDataTools.js"></script>
+        <script src="../layerFixedConv2d.js"></script>
+        <script src="../newOptimizer.js"></script>
+        <script>
+            var p=tf.util.path();
+            p.add("in",tf.input({shape:[1]}));
+            p.to("d1",tf.layers.dense({units:10}));
+            p.to("d2",tf.layers.dense({units:10}));
+            p.to("out",tf.layers.dense({units:1}));
+
+            var inputs=tf.tensor([
+                [1],[2],[3],[4],[5]            
+            ]);
+            var outputs=tf.tensor([
+                [1],[2],[-1],[-2],[0]            
+            ]);
+            var m=tf.model({inputs:[p.get("in")],outputs:[p.apply()]});
+
+            m.compile({
+                optimizer:'sgd',
+                loss:"meanSquaredError"
+            })
+            var o=new optX();
+            //o.init(m);
+            for(var i=0;i<10;i++)o.add();
+
+            function ev(){
+                clean();for(var i=0;i<10;i++)o.addMutate();
+                return o.evaluate(inputs,outputs);
+            }
+
+            function init(){
+                o.init(m);ev();
+            }
+
+            function test(){
+                console.log(o.best,o.getBest().delta);
+                o.set(m,o.best);
+                //o.init(m);
+                m.evaluate(inputs,outputs).print();
+                return ev();
+            }
+
+            var i=10;
+            function repeat(ii){
+                if(ii)i=ii;
+                if(i-->0)test().then(()=>repeat());
+            }
+            function clean(max=10){
+                o.cleanSeeds(max,true);o.addMultiply(1,1.1);o.addMultiply(1,0.5);
+            }
+
+            init();
+        </script>
+    <body>
+
+    </body>
+</html>
