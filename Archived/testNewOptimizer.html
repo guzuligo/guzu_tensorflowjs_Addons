@@ -21,15 +21,15 @@
             var m=tf.model({inputs:[p.get("in")],outputs:[p.apply()]});
 
             m.compile({
-                optimizer:'sgd',
+                optimizer:'adam',
                 loss:"meanSquaredError"
             })
             var o=new optX();
             //o.init(m);
             for(var i=0;i<10;i++)o.add();
 
-            function ev(){
-                clean();for(var i=0;i<10;i++)o.addMutate();
+            function ev(e){
+                if(e){clean();for(var i=0;i<10;i++)o.addMutate();}
                 return o.evaluate(inputs,outputs);
             }
 
@@ -37,12 +37,13 @@
                 o.init(m);ev();
             }
 
-            function test(){
-                console.log(o.best,o.getBest().delta);
+            function test(doelse){
                 o.set(m,o.best);
-                //o.init(m);
-                m.evaluate(inputs,outputs).print();
-                return ev();
+                console.log(o.best,o.getBest().delta,"loss:",m.evaluate(inputs,outputs).dataSync()[0]);
+                
+                o.init(m);
+                //console.log("loss:",m.evaluate(inputs,outputs).dataSync()[0]);
+                return ev(doelse);
             }
 
             var i=10;
@@ -52,6 +53,14 @@
             }
             function clean(max=10){
                 o.cleanSeeds(max,true);o.addMultiply(1,1.1);o.addMultiply(1,0.5);
+            }
+
+            function fit(ii){
+                m.fit(inputs,outputs,{epochs:ii,callbacks:{onEpochEnd:console.log}})
+            }
+
+            function check(){
+                return "loss: "+m.evaluate(inputs,outputs).dataSync()[0];
             }
 
             init();

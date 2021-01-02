@@ -8,16 +8,23 @@ class optX{
 
     init(model){
         if(this._evaluating)
-            console.warn("init while still evaluating.")
+            return console.warn("init while still evaluating.")
         this.model=model;
         //if(this.weights.length>0)
         //    for(var i in this.weights)
         //        this.weights[i].dispose();    
-        this.weights=model.getWeights();
-        
-        for(var i in this.weights)
-            this.weights[i].clone();
+        this.weights=model.getWeights().concat();
+        this.weights0=this._cloneWeights(this.weights);
+        //for(var i in this.weights)
+        //    this.weights[i]=this.weights[i].clone();
     };
+
+    _cloneWeights(w){
+        var r=[];
+        for(var i=0;i<w.length;i++)
+            r[i]=w[i].clone();
+        return r;
+    }
 
     add(seed){
         if(this.seeds.length===0){
@@ -27,7 +34,7 @@ class optX{
         seed=(this.repairSeed(seed));
         var m={
             seed:seed,
-            loss:undefined,
+            loss:1,
         };
 
         this.seeds.push(m);
@@ -37,7 +44,7 @@ class optX{
         if(!index)return;//don't add for zero
         var m={
             seed:this.seeds[index].seed.concat(),
-            loss:undefined,
+            loss:1,
         };
         val=val||1;
         m.seed[4]=m.seed[4]*val;
@@ -49,7 +56,7 @@ class optX{
         if(!index)return;//don't add for zero
         var m={
             seed:this.seeds[index].seed.concat(),
-            loss:undefined,
+            loss:1,
         };
         m.seed[5]=this.repairSeed(m.seed[5][2]);//new sub-seed
         m.seed[5].pop();//internal seed not needed
@@ -62,13 +69,13 @@ class optX{
     }
     
     get(index){
-        if(index===0)return this.weights;
+        if(index===0)return this.weights.concat();
         return this.getMutation(this.weights,this.seeds[index].seed);
     }
 
     set(model,seedIndex){
         if(!seedIndex)
-            model.setWeights(this.weights);
+            model.setWeights(this.weights0);
         else
             this.setMutation(model,this.seeds[seedIndex].seed);
     }
@@ -77,9 +84,10 @@ class optX{
         this.best=0;this._evaluating=true;
         var i=-1;
         
-        var ev=()=>{
+        var ev=()=>{ 
+            var m=this.model;
             i++;if(this.seeds.length>i){
-                var m=this.model;
+               
                 //tf.tidy(()=>
                 m.setWeights(this.get(i))
                 //);
@@ -87,7 +95,7 @@ class optX{
                     this.seeds[i].loss=d[0];
                     this.seeds[i].delta=0;
                     if(i>0)this.seeds[i].delta=d[0]-this.seeds[0].loss;
-                    if(this.seeds[i].loss<this.seeds[this.best].loss){
+                    if(this.seeds[i].delta<this.seeds[this.best].delta){
                         this.best=i;
                         //m.setWeights(this.weights)
                     }
@@ -98,6 +106,7 @@ class optX{
                 //console.log("done evaluation")
                 if(this._then){
                     var then=this._then;this._then=undefined;
+                    m.setWeights(this.weights.concat());
                     then();
                     
                 }
@@ -150,14 +159,15 @@ class optX{
         //var w=model.getWeights();
         
         //seed=this.repairSeed(seed);
-        
-        
+        if(!seed)
+            return this._cloneWeights(w);//w.concat();
+        w=w.concat();
         for (var i in w){
-            //major seed
+            //major seed applied
             w[i]=w[i].add(
                seed[3](w[i].shape,seed[0],seed[1],'float32',seed[2]).mul(seed[4])
                );
-            //minor seed
+            //minor seed applied
             w[i]=w[i].add(
             seed[5][3](w[i].shape,seed[5][0],seed[5][1],'float32',seed[5][2]).mul(seed[5][4])
             );
