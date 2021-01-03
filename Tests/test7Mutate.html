@@ -92,11 +92,10 @@
         </script>
     </head>
     <body onload="onBodyLoaded();">
-        <input type="file" id="files" onchange="makeData();" /><button onclick="testEvaluate()">evaluate</button> <small id='ev'></small><br>
-        <button onclick="testTrain('epochs')">Train</button>
+        <button onclick="test()">Test</button><input type="file" id="files" onchange="makeData();" />
+        <br>
         
-        <input id='epochs' size=1 value=55></input><small id='counter'>Epochs</small>
-        <br>Accuricy: <i id='acc'></i>
+        
         <canvas id="c" width=64px height=64px></canvas>
         
     </body>

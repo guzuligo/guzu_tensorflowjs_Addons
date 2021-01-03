@@ -9,6 +9,7 @@
         <script src='../coordconvplugin.js'></script>
         <script src="../GuzuDataTools.js"></script>
         <script src="../layerFixedConv2d.js"></script>
+        <script src="../Archived/newOptimizer.js"></script>
           <script>
             function _(a){return document.getElementById(a)};
             tf.enableProdMode();
@@ -213,7 +214,6 @@
               }
             }
             function test(){predict(0);}
-            var t1;
             function predict(n=0){
               //var imd=_('c1').getContext('2d').getImageData(0,0,128,128);
               //tf.browser.fromPixels()
@@ -258,15 +258,30 @@
               trainer.stopTraining=true;
             }
             
-            //testing
-            //*
-            var G =tf.input({shape:[2]})
-            var g2=tf.layers.scalar({values:[6,7]})
-            var G2=g2.apply(G)
-            var g3=tf.layers.scalar({values:[8]})
-            var G3=g3.apply(G2)
-            var q=tf.model({inputs:[G],outputs:[G3]});
-            //*/
+            
+            var o=new optX();
+            o.init(trainer);
+
+            function newSearch(){
+              o.cleanSeeds(10,true);
+              for(var i=0;i<30;i++)
+                o.add();
+              o.evaluate(t1,t1).then(()=>console.log("best: "+o.best))
+            }
+
+            function search(){
+              o.cleanSeeds(0);o.cleanSeeds(10,true);
+              o.addMultiply(o.best,0.5);
+              o.addMultiply(o.best,1.5);
+              for(var i=0;i<5;i++)
+                o.addMutate(o.best);
+                o.evaluate(t1,t1).then(()=>console.log("best: "+o.best));
+            }
+
+            function done(){
+              o.set(trainer,o.best);
+            }
+
       </script>
       <body onload="init()">
         <input type="file" onchange="load()" id="file" multiple/>

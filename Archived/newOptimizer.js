@@ -1,6 +1,6 @@
 class optX{
     constructor(){
-        this.seeds=[];
+        this.seeds=[{seed:undefined,loss:undefined,delta:undefined}];
         this.weights=[];
         this.model=null;
         this.best=0;
@@ -91,7 +91,7 @@ class optX{
                 //tf.tidy(()=>
                 m.setWeights(this.get(i))
                 //);
-                m.evaluate(ins,outs,args).data().then((d)=>{
+                m.evaluate(ins,outs,args)[0].data().then((d)=>{
                     this.seeds[i].loss=d[0];
                     this.seeds[i].delta=0;
                     if(i>0)this.seeds[i].delta=d[0]-this.seeds[0].loss;
@@ -138,9 +138,8 @@ class optX{
             max=this.getLength()-2;
         else
             max=this.getLength()-max;
-        var s=this.seeds;
         while(max-->0)
-            if(s[s.length-1].delta>0 || noException)
+            if(this.seeds[this.seeds.length-1].delta>0 || noException)
                 this.seeds.pop();
     }
     
