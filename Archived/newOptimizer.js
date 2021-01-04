@@ -86,12 +86,16 @@ class optX{
         
         var ev=()=>{ 
             var m=this.model;
-            i++;if(this.seeds.length>i){
+            i++;if(i<this.seeds.length){
                
                 //tf.tidy(()=>
-                m.setWeights(this.get(i))
+                if(i>0)
+                    m.setWeights(this.get(i));
+                else
+                    this.weights=this._cloneWeights(m.getWeights());
                 //);
-                m.evaluate(ins,outs,args)[0].data().then((d)=>{
+                var _e=m.evaluate(ins,outs,args);
+                (Array.isArray(_e)?_e[0]:_e).data().then((d)=>{
                     this.seeds[i].loss=d[0];
                     this.seeds[i].delta=0;
                     if(i>0)this.seeds[i].delta=d[0]-this.seeds[0].loss;
@@ -103,10 +107,11 @@ class optX{
                 });
             }else{
                 this._evaluating=false;
+                m.setWeights(this.weights0.concat());
                 //console.log("done evaluation")
                 if(this._then){
                     var then=this._then;this._then=undefined;
-                    m.setWeights(this.weights.concat());
+                    
                     then();
                     
                 }

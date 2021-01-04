@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>importing test</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src='../google/tensorflow2.7.0.min.js'></script>
+        <script src='../TFLayerPath.js'></script>
+        <script src='../coordconvplugin.js'></script>
+        <script src="../GuzuDataTools.js"></script>
+        <script src="../layerFixedConv2d.js"></script>
+        <script>
+            var gt;
+
+            function onload(){
+                gt=new GuzuFileTools("file");
+            }
+        </script>
+    </head>
+    <body onload="onload();">
+        <input type="file" id="file" multiple />
+        <canvas id="c"></canvas>
+    </body>
+</html>

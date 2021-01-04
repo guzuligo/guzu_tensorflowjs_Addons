@@ -304,6 +304,7 @@ class GuzuFileTools {
                 ,canvas:null
                 ,rescale:!true   //rescale cropped area
                 ,divide:1,add:0 //normalization tools
+                ,func:null  //function to edit the results
             };
 
             if (!options_)
@@ -383,6 +384,7 @@ class GuzuFileTools {
                         if ((c_&4)!==0)r[j][i].push(d_[k+2]/options_.divide+options_.add);
                         if ((c_&8)!==0)r[j][i].push(d_[k+3]/options_.divide+options_.add);
                         //if (i==150 && j==50)alert(c_&1);
+                        if (options_.func)r[j]=options_.func(r[j]);
                     }
                 }
                 
@@ -400,6 +402,32 @@ class GuzuFileTools {
         
     }
     
+    //TODO:WIP
+    drawPixelsToCanvas(pixels,canvas,options_){
+        if(typeof(canvas)==='string')
+            canvas=document.getElementById(canvas);
+        var c=canvas.getContext('2d');
+        //default
+        options_=options_||{};
+        var defOptions={x:0,y:0,w:c.width,h:c.height,divide:1,add:0,func:null};//func need to be inverted
+        for (var i in defOptions) if(!options_[i])options_[i]=defOptions[i];
+        var o=options_;
+        var c;
+        var c2=(c).getImageData(o.x,o.y,o.w,o.h);
+        
+        for(var i in pixels){
+            for(var ii=0;ii<pixels[i].length;ii++){
+                if(options_.func)pixels[i]=options_.func(pixels[i]);
+                pixels[i]=(pixels[i]-options_.add)*options_.divide;
+            }
+            while(pixels[i].length<3)pixels[i].push(pixels[i][0]);
+            if(pixels[i].length<4)pixels[i].push(255);
+        }
+
+        this.NNSetImage(pixels,c2,{w:o.w,h:o.h,c:o.c,c:4});
+        c.putImageData(c2,0,0);
+    }
+
     //returns a part of the array src_ looped
     sliceData(src_,iteration_,size_,loop_=true,stepSize_){
         if (stepSize_===undefined)stepSize_=size_;

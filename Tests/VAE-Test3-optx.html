@@ -250,7 +250,8 @@
               predict(0).then(()=>{
               trainer.fit([t1],[t1],{epochs:eps,
                                       callbacks: {onEpochEnd: (epoch, logs) => _("loss").innerHTML="LOSS: "+(logs.loss)}
-                                    }).then(()=>{console.log("======="+(_("stat").innerHTML="Done")+"=======");predict(0)});
+                                    }
+                          ).then(()=>{console.log("======="+(_("stat").innerHTML="Done")+"=======");predict(0)});
               })
             }
             
@@ -262,20 +263,24 @@
             var o=new optX();
             o.init(trainer);
 
-            function newSearch(){
+            function newSearch(_done){
               o.cleanSeeds(10,true);
               for(var i=0;i<30;i++)
                 o.add();
-              o.evaluate(t1,t1).then(()=>console.log("best: "+o.best))
+              o.evaluate(t1,t1).then(()=>{console.log("best: "+o.best);if(_done)done();})
             }
 
-            function search(){
+            function search(_done){
               o.cleanSeeds(0);o.cleanSeeds(10,true);
               o.addMultiply(o.best,0.5);
               o.addMultiply(o.best,1.5);
               for(var i=0;i<5;i++)
                 o.addMutate(o.best);
-                o.evaluate(t1,t1).then(()=>console.log("best: "+o.best));
+              o.evaluate(t1,t1).then(()=>{console.log("best: "+o.best);if(_done)done();});
+            }
+
+            function search0(_done){
+              o.evaluate(t1,t1).then(()=>{console.log("best: "+o.best);if(_done)done();});
             }
 
             function done(){

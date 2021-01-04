@@ -29,7 +29,7 @@
             for(var i=0;i<10;i++)o.add();
 
             function ev(e){
-                if(e){clean();for(var i=0;i<10;i++)o.addMutate();}
+                if(e){clean();for(var i=0;i<3;i++){o.addMutate();o.add();}}
                 return o.evaluate(inputs,outputs);
             }
 
@@ -47,9 +47,9 @@
             }
 
             var i=10;
-            function repeat(ii){
+            function repeat(ii,e){
                 if(ii)i=ii;
-                if(i-->0)test().then(()=>repeat());
+                if(i-->0)test(e).then(()=>repeat());
             }
             function clean(max=10){
                 o.cleanSeeds(max,true);o.addMultiply(1,1.1);o.addMultiply(1,0.5);
