@@ -116,9 +116,9 @@ class GuzuFileTools {
         };
     }
 
-    //TODO:WIP
+    //1/5/2021 TODO:testing
     parseImages(obj,_options){
-        var result={ready:false,data:Array.isArray(obj)?[]:{}};
+        var result={ready:false,onReady:undefined,data:Array.isArray(obj)?[]:{}};
         var replace_=(typeof(obj[0])!='object');//all should be consistant
         var total=0;
         var func=function(img,i){
@@ -130,14 +130,15 @@ class GuzuFileTools {
             else
                 obj[i].imageData=img;
             result.data[i]=img;
-            if(--total===0)
+            if(--total===0){
                 result.ready=true;
+                if(result.onReady)
+                    result.onReady(obj,_options);
+            }
             result.total=total;
+            
         };
         for (var i in obj){
-
-            
-
             var name=replace_?obj[i]:obj[i].file;
             var options=_options||(replace_?{}:obj[i].options||{});
             var vals={i:i}
@@ -147,6 +148,7 @@ class GuzuFileTools {
         return result;
     }
 
+    //Obsolete: 1/5/2021
     //parse a JSON file to make use of its data for neural network
     NNParse(id_,callback_){
         var me=this;
