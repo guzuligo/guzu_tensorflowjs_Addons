@@ -86,6 +86,7 @@ class GuzuFileTools {
         return true;
     }
     
+    //get a 2D array of {file:"filename",type:"image",options} and replaces the object by image data
     objectsToFiles(j_){
         var i,j;var me=this;
         
@@ -114,6 +115,38 @@ class GuzuFileTools {
             }
         };
     }
+
+    //TODO:WIP
+    parseImages(obj,_options){
+        var result={ready:false,data:Array.isArray(obj)?[]:{}};
+        var replace_=(typeof(obj[0])!='object');//all should be consistant
+        var total=0;
+        var func=function(img,i){
+            console.log(arguments)
+            //i=i.i;
+            console.log(i);
+            if(replace_)
+                obj[i]=img;
+            else
+                obj[i].imageData=img;
+            result.data[i]=img;
+            if(--total===0)
+                result.ready=true;
+            result.total=total;
+        };
+        for (var i in obj){
+
+            
+
+            var name=replace_?obj[i]:obj[i].file;
+            var options=_options||(replace_?{}:obj[i].options||{});
+            var vals={i:i}
+            {this.getImagePixels(name,{i:i,fn:function(fn_,img){func(img,this.i)}},options);}
+            total++;
+        };
+        return result;
+    }
+
     //parse a JSON file to make use of its data for neural network
     NNParse(id_,callback_){
         var me=this;

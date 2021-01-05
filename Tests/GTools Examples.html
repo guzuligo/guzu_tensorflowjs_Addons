@@ -15,10 +15,30 @@
             function onload(){
                 gt=new GuzuFileTools("file");
             }
+
+            function simpleDraw(){
+                gt.getImagePixels(0,null,{canvas:"c",w:100,h:100});
+            }
+
+            function pixelDraw(){
+                var config={w:128,h:128,c:2};
+                gt.getImagePixels(0,(img)=>{
+                    gt.drawPixelsToCanvas(img.data,"c",config)
+                },config);
+            }
+
+            
+
         </script>
     </head>
     <body onload="onload();">
-        <input type="file" id="file" multiple />
-        <canvas id="c"></canvas>
+        <input type="file" id="file" multiple /><br>
+        <table><tr><td>
+            <button onclick="simpleDraw()">Simple Draw</button><br>
+            <button onclick="pixelDraw()">Pixel Draw</button>
+        </td><td>
+            <canvas id="c"></canvas>
+        </td>
+        </table>
     </body>
 </html>
