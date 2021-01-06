@@ -443,39 +443,80 @@ window._guzuTF.BoundingBoxLayer=class BoundingBoxLayer extends tf.layers.Layer {
   }
   
   computeOutputShape(inputShape) {
-    return [inputShape[0],4];
+    if(inputShape.length===3)
+      return [inputShape[0],4];
+    else
+      return [inputShape[0],4,inputShape[3]];
   }
   
   call(it, kwargs){ 
     var a=Array.isArray(it)?it[0]:it;
     if(this.useThreshold)
       a=a.sub(this.threshold).step();
-
-    var s1=a.shape[a.shape.length-1];
-    var s2=a.shape[a.shape.length-2];
+    var d=(a.shape.length===4)?1:0
+    var s1=a.shape[a.shape.length-1-d];
+    var s2=a.shape[a.shape.length-2-d];
     var b=tf.range(s1,0,-1)//.expandDims(1);
-    
+    b=d?b.expandDims(1):b;
     //b.print();
     var c,r;
-    c=a.mul(b);//c.print();console.log("======================");
-    r=tf.scalar(s1+1).sub(c.max(-1).max(-1,true));//r.print()
-
-    c=a.mul(b.reverse()).max(-1).max(-1,true);//c.print();
-    r=r.concat(c,-1);//r.print();
-
+    c=a.mul(b).max(-1-d).max(-1-d,true);
+    var r=tf.scalar(s1+1).sub(c);//r.print();
+//
+    c=a.mul(b.reverse()).max(-1-d).max(-1-d,true);
+    r=r.concat(c,-1-d);//r.print();
+//
     b=tf.range(s2,0,-1).expandDims(1);
-    c=tf.scalar(s2+1).sub(a.mul(b).max(-1).max(-1,true));//c.print();
-    r=r.concat(c,-1);//r.print();
-
-    c=a.mul(b.reverse());//c.print();
-    c=a.mul(b.reverse()).max(-1).max(-1,true);//c.print();
-    r=r.concat(c,-1);
-    r=r.sub(1);//.mul([1/s1,1/s2,1/s1,1/s2]);
-    
-    s1--;s2--;
-    return this.normalize?r.mul([1/(s1),1/s2,1/s1,1/s2]):r;
+    c=tf.scalar(s2+1).sub(a.mul(d?b.expandDims(1):b).max(-1-d).max(-1-d,true));//c.print();
+    r=r.concat(c,-1-d);//r.print();
+//
+    b=d?b.reverse().expandDims(1):b.reverse();
+    c=a.mul(b).max(-1-d).max(-1-d,true);//c.print();
+    r=r.concat(c,-1-d).sub(1);
+    if(this.normalize){
+      var ss=tf.tensor([1/s1,1/s2,1/s1,1/s2]);
+      ss=d?ss.expandDims(1):ss;
+      s1--;s2--;
+      return r.mul(ss);
+    }
+    return r;
   }//call
-  
+  /*
+  // Find Bounding box
+var s=[]; for(j=0;j<2;j++)for(var i=0;i<6;i++)
+  s=s.concat([s.length>4&&j==1?1:0, s.length>4?1:0, s.length>1?.5:0,  s.length>1?1:0,0,0])
+
+var d=0;
+var a=d?tf.tensor4d(s,[2,3,3,4]):tf.tensor3d(s,[2,6,6]);
+a=a.step();a.print();
+var s1=a.shape[a.shape.length-1-d];
+var s2=a.shape[a.shape.length-2-d];
+
+var b=tf.range(s1,0,-1);
+b=d?b.expandDims(1):b;
+
+//b.print();
+var c;
+c=a.mul(b).max(-1-d).max(-1-d,true);
+var r=tf.scalar(s1+1).sub(c);//r.print();
+;
+c=a.mul(b.reverse()).max(-1-d).max(-1-d,true);
+r=r.concat(c,-1-d);//r.print();
+console.log("======================");
+
+b=tf.range(s2,0,-1).expandDims(1);
+c=tf.scalar(s2+1).sub(a.mul(d?b.expandDims(1):b).max(-1-d).max(-1-d,true));//c.print();
+r=r.concat(c,-1-d);//r.print();
+
+//c=a.mul(b.reverse());//c.print();
+b=d?b.reverse().expandDims(1):b.reverse();
+c=a.mul(b).max(-1-d).max(-1-d,true);//c.print();
+s1--;s2--;
+var ss=tf.tensor([1/s1,1/s2,1/s1,1/s2]);
+ss=d?ss.expandDims(1):ss;
+r=r.concat(c,-1-d).sub(1).print();//r.sub(1).mul(ss).print();
+;
+   */
   
 }//SumPooling2D
 
