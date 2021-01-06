@@ -27,18 +27,29 @@
                 },config);
             }
 
+            function NNDraw(){
+                var config={w:148,h:148,c:7};
+                gt.getImagePixels(0,(img)=>{
+                    gt.NNSetImage(img.data,document.getElementById("c"),config)
+                },config);
+            }
+
+
             
 
         </script>
     </head>
-    <body onload="onload();">
+    <body onload="onload();" bgcolor="121212">
+        <font color="gray">
         <input type="file" id="file" multiple /><br>
         <table><tr><td>
             <button onclick="simpleDraw()">Simple Draw</button><br>
-            <button onclick="pixelDraw()">Pixel Draw</button>
+            <button onclick="pixelDraw()">Pixel Draw</button><br>
+            <button onclick="NNDraw()">NNSetImage</button>
         </td><td>
             <canvas id="c"></canvas>
         </td>
         </table>
+    </font>
     </body>
 </html>

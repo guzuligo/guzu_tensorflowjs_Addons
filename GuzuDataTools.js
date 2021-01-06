@@ -1,4 +1,4 @@
-//Ver 0.1.147b
+//Ver 0.1.147c
 //idea: atob() and btoa() //from window. encode decode base64
 
 if(!window._guzuTF)window._guzuTF={};
@@ -117,6 +117,9 @@ class GuzuFileTools {
     }
 
     //1/5/2021 TODO:testing
+    //obj:array of file names or object with {file:"name.jpg"} which will be {file:"name",imageData:[]}
+    //_options:{} will be sent to getImagePixels
+    //return {ready:false,onReady:undefined,data:[] or {} } and you can set onReady=callback(obj,options)
     parseImages(obj,_options){
         var result={ready:false,onReady:undefined,data:Array.isArray(obj)?[]:{}};
         var replace_=(typeof(obj[0])!='object');//all should be consistant
@@ -209,10 +212,11 @@ class GuzuFileTools {
         var imd=targetImageData;
         //if Canvas provided, use it
         if(targetImageData.nodeName){
-          imd=imd.getContext('2d').getImageData(
-            options.x|| 0,options.y|| 0,
-            options.w || imd.width,
-            options.h || imd.height);
+            imd=imd.getContext('2d').getImageData(
+                options.x|| 0,options.y|| 0,
+                options.w || imd.width,
+                options.h || imd.height
+            );
         }
         var o=sourceData;
         for (i=0;i<o.length/mx;i++){

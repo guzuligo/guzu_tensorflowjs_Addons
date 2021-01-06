@@ -426,6 +426,64 @@ window._guzuTF.TemporaryLayer=class TemporaryLayer extends tf.layers.Layer {
 tf.serialization.registerClass(window._guzuTF.TemporaryLayer);  // Needed for serialization.
 
 
+window._guzuTF.BoundingBoxLayer=class BoundingBoxLayer extends tf.layers.Layer {
+  static get className() {
+        return 'BoundingBoxLayer';
+    }
+  
+  constructor(args) {
+    //args={normalize:bool,threshold:Number,useThreshold:bool}
+    args=args||{normalize:false,threshold:0,useThreshold:false};
+    super(args);
+    //this.__={};
+    for (var i in args){
+      this[i]=args[i];
+    }
+    
+  }
+  
+  computeOutputShape(inputShape) {
+    return [inputShape[0],4];
+  }
+  
+  call(it, kwargs){ 
+    var a=Array.isArray(it)?it[0]:it;
+    if(this.useThreshold)
+      a=a.sub(this.threshold).step();
+
+    var s1=a.shape[a.shape.length-1];
+    var s2=a.shape[a.shape.length-2];
+    var b=tf.range(s1,0,-1)//.expandDims(1);
+    
+    //b.print();
+    var c,r;
+    c=a.mul(b);//c.print();console.log("======================");
+    r=tf.scalar(s1+1).sub(c.max(-1).max(-1,true));//r.print()
+
+    c=a.mul(b.reverse()).max(-1).max(-1,true);//c.print();
+    r=r.concat(c,-1);//r.print();
+
+    b=tf.range(s2,0,-1).expandDims(1);
+    c=tf.scalar(s2+1).sub(a.mul(b).max(-1).max(-1,true));//c.print();
+    r=r.concat(c,-1);//r.print();
+
+    c=a.mul(b.reverse());//c.print();
+    c=a.mul(b.reverse()).max(-1).max(-1,true);//c.print();
+    r=r.concat(c,-1);
+    r=r.sub(1);//.mul([1/s1,1/s2,1/s1,1/s2]);
+    
+    s1--;s2--;
+    return this.normalize?r.mul([1/(s1),1/s2,1/s1,1/s2]):r;
+  }//call
+  
+  
+}//SumPooling2D
+
+tf.serialization.registerClass(window._guzuTF.TemporaryLayer);  // Needed for serialization.
+
+
+
+
 /*
  * Accepts both ranges and two arrays of ranges
 */
@@ -527,6 +585,8 @@ tf.layers.counter=(args)=>{return new window._guzuTF.AddCounter(args);};
 tf.layers.sumPooling2d=(args)=>{return new window._guzuTF.SumPooling2d(args);};
 tf.layers.mutate2d=(args)=>{return new window._guzuTF.Mutation2d(args);};
 tf.layers.temp=(args)=>{return new window._guzuTF.TemporaryLayer(args);};
+tf.layers.bbox=(args)=>{return new window._guzuTF.BoundingBoxLayer(args);};
+
 
 tf.layers.sub=window._guzuTF.guzuTfTools.sub;
 tf.layers.mul=window._guzuTF.guzuTfTools.mul;
