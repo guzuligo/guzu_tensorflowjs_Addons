@@ -17,12 +17,12 @@
         var a=tf.tensor3d(s,[2,6,6]).step();a.print();
 
         var p=tf.util.path();
+        //
         p.add("in",tf.input({shape:[6,6,3]}));
-        p.to("count",tf.layers.bbox());
+        p.to("count",tf.layers.bbox());//BoundingBoxLayer
 
         var m=tf.model({inputs:[p.get("in")],outputs:[p.apply()]});
 
         </script>
-    <body>
     </body>
 </html>

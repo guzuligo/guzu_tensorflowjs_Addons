@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>importing test</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src='../google/tensorflow2.7.0.min.js'></script>
+        <script src='../TFLayerPath.js'></script>
+        <script src='../coordconvplugin.js'></script>
+        <script src="../GuzuDataTools.js"></script>
+        <script src="../layerFixedConv2d.js"></script>
+        <script>
+
+        var s=[]; for(j=0;j<2;j++)for(var i=0;i<6;i++)
+        s=s.concat([s.length>4&&j==1?1:0, s.length>4?1:0, s.length>1?.5:0,  s.length>1?1:0,0,0])
+        //console.log(s.length)
+        var a=tf.tensor3d(s,[2,6,6]).step();a.print();
+
+        var p=tf.util.path();
+        p.add("in",tf.input({shape:[6,6,3]}));
+        p.to("count",tf.layers.bbox());
+
+        var m=tf.model({inputs:[p.get("in")],outputs:[p.apply()]});
+        var c,cx;
+        function onload(){
+            
+            c=document.getElementById("c");
+            cx=c.getContext('2d');
+            cx.textAlign="center";
+            cx.textBaseline="middle";
+        }
+
+        var fonts=[
+            "sans-serif",//
+            "Monospace",//
+            "Arial",
+            "Times New Roman",
+            "Helvetica",
+            "Courier New",
+            "Verdana",
+            "Arial Narrow",
+            "Candara",
+            "Calibri",
+            "Cambria",
+            "Impact",
+            "Georgia",
+            "Trebuchet MS",
+
+
+            "Comic Sans MS",
+        ]
+        function draw(text,f){
+            cx.font="20px "+fonts[f||0];
+            
+            cx.clearRect(0,0,48,48);
+            cx.fillText(text,24,24);
+        }
+
+        var t1;
+        //idea to convert imagedata to tensor
+        function test(){
+            var a=cx.getImageData(0,0,48,48).data;
+            t1=tf.tensor(Array.from(a),[48,48,4]);
+
+            var f=t1.split(4,-1)
+            t1=t1.split(4,-1)[3];//take only alpha
+            //or maybe take only two channels
+            f[0].concat(f[3],-1).print();
+        }
+
+        </script>
+    <body onload="onload()">
+        <canvas id="c" width=48 height=48></canvas>
+    </body>
+</html>

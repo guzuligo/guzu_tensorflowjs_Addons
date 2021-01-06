@@ -425,7 +425,10 @@ window._guzuTF.TemporaryLayer=class TemporaryLayer extends tf.layers.Layer {
 
 tf.serialization.registerClass(window._guzuTF.TemporaryLayer);  // Needed for serialization.
 
-
+//input is a tensor2d or tensor3d
+//returns a bouning box of shape [x1,x2,y1,y2]. x1 can contain all channels
+//args:{normalize:false,threshold:0,useThreshold:false}
+//normalize for range 0-1. Threshold to convert values to 1 if exceeded it
 window._guzuTF.BoundingBoxLayer=class BoundingBoxLayer extends tf.layers.Layer {
   static get className() {
         return 'BoundingBoxLayer';
@@ -474,9 +477,10 @@ window._guzuTF.BoundingBoxLayer=class BoundingBoxLayer extends tf.layers.Layer {
     c=a.mul(b).max(-1-d).max(-1-d,true);//c.print();
     r=r.concat(c,-1-d).sub(1);
     if(this.normalize){
+      s1--;s2--;
       var ss=tf.tensor([1/s1,1/s2,1/s1,1/s2]);
       ss=d?ss.expandDims(1):ss;
-      s1--;s2--;
+      
       return r.mul(ss);
     }
     return r;
@@ -518,9 +522,63 @@ r=r.concat(c,-1-d).sub(1).print();//r.sub(1).mul(ss).print();
 ;
    */
   
-}//SumPooling2D
+}//BoundingBoxLayer
 
-tf.serialization.registerClass(window._guzuTF.TemporaryLayer);  // Needed for serialization.
+tf.serialization.registerClass(window._guzuTF.BoundingBoxLayer);  // Needed for serialization.
+
+
+//args:{index:[numbers]}
+//returns input with channels removed
+//TODO: full testing
+window._guzuTF.DropChannelsLayer=class DropChannelsLayer extends tf.layers.Layer {
+  static get className() {
+        return 'DropChannelsLayer';
+    }
+  
+  constructor(args) {
+    //args={normalize:bool,threshold:Number,useThreshold:bool}
+    args=args||{index:[]};//normalize:false,threshold:0,useThreshold:false};
+    super(args);
+    args.index.sort();
+    //this.__={};
+    for (var i in args){
+      this[i]=args[i];
+    }
+    
+  }
+  
+  computeOutputShape(inputShape) {
+    inputShape[inputShape.length-1]-=this.index.length;//no need to concat()? O_O;
+    return inputShape;
+  }
+  
+  call(it, kwargs){ 
+    var a=Array.isArray(it)?it[0]:it;
+    var c=it.shape[it.shape.length-1];
+
+    if(this.index.length===0)//if no indicies provided, do nothing
+      return a;
+    //drop starts
+    var n=this.index.concat();
+    a=a.split(c,-1);
+    var b;
+    i=-1;while(i<c){
+      if(i!==n[0])
+        b=b?b.concat(a[i],-1):a[i];
+      else
+        n.shift();
+    }
+
+    //if all channels dropped, show error
+    if(!b)
+      console.error("dropChannel returned no channels!");
+    return b;
+  }
+  
+}//DropChannelsLayer
+
+tf.serialization.registerClass(window._guzuTF.DropChannelsLayer);  // Needed for serialization.
+
 
 
 
@@ -627,6 +685,7 @@ tf.layers.sumPooling2d=(args)=>{return new window._guzuTF.SumPooling2d(args);};
 tf.layers.mutate2d=(args)=>{return new window._guzuTF.Mutation2d(args);};
 tf.layers.temp=(args)=>{return new window._guzuTF.TemporaryLayer(args);};
 tf.layers.bbox=(args)=>{return new window._guzuTF.BoundingBoxLayer(args);};
+tf.layers.dropChannels=(args)=>{return new window._guzuTF.DropChannelsLayer(args);};
 
 
 tf.layers.sub=window._guzuTF.guzuTfTools.sub;
