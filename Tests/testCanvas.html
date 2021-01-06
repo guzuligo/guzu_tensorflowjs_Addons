@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src='../google/tensorflow2.7.0.min.js'></script>
         <script src='../TFLayerPath.js'></script>
-        <script src='../coordconvplugin.js'></script>
+        <script src='../GuzuTFPlugins.js'></script>
         <script src="../GuzuDataTools.js"></script>
         <script src="../layerFixedConv2d.js"></script>
         <script>
@@ -23,8 +23,7 @@
         var m=tf.model({inputs:[p.get("in")],outputs:[p.apply()]});
         var c,cx;
         function onload(){
-            
-            c=document.getElementById("c");
+            c=document.getElementById("c");//new OffscreenCanvas(256, 256);
             cx=c.getContext('2d');
             cx.textAlign="center";
             cx.textBaseline="middle";
@@ -45,15 +44,17 @@
             "Impact",
             "Georgia",
             "Trebuchet MS",
-
-
-            "Comic Sans MS",
-        ]
-        function draw(text,f){
-            cx.font="20px "+fonts[f||0];
+            "Comic Sans MS"
+        ];
+        function draw(text,fontNumber,sizeoffset=0,xoffset=0,yoffset=0,rotate){
+            cx.font=(sizeoffset+20)+"px "+fonts[fontNumber||0];
             
             cx.clearRect(0,0,48,48);
-            cx.fillText(text,24,24);
+            
+            cx.translate(24+xoffset,24+yoffset);
+            cx.rotate(rotate*Math.PI/180);
+            cx.fillText(text,0,0);
+            cx.resetTransform();
         }
 
         var t1;
