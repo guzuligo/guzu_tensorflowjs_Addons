@@ -562,7 +562,7 @@ window._guzuTF.DropChannelsLayer=class DropChannelsLayer extends tf.layers.Layer
     var n=this.index.concat();
     a=a.split(c,-1);
     var b;
-    i=-1;while(i<c){
+    i=-1;while(++i<c){
       if(i!==n[0])
         b=b?b.concat(a[i],-1):a[i];
       else
@@ -676,6 +676,30 @@ window._guzuTF.GuzuTfTools=class GuzuTfTools{
 }
 window._guzuTF.guzuTfTools=new window._guzuTF.GuzuTfTools();
 
+//tf.guzu.tools
+tf.guzu={};
+{
+  
+  tf.guzu.removeChannels=function(it,index=[]){
+    var a=Array.isArray(it)?it[0]:it;
+    var c=it.shape[it.shape.length-1];
+
+    if(index.length===0)//if no indicies provided, do nothing
+      return a;
+    //drop starts
+    var n=index.sort();
+    a=a.split(c,-1);
+    var b;
+    i=-1;while(++i<c){
+      if(i!==n[0])
+        b=b?b.concat(a[i],-1):a[i];
+      else
+        n.shift();
+    }
+    if(b)return b;
+    console.error("removeChannels failed. No channels left.");
+  }
+}
 
 
 tf.layers.coord=(args)=>{return new window._guzuTF.AddCoords(args);};
