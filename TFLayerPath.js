@@ -147,6 +147,40 @@ window._guzuTF.TFLayerPath=class TFLayerPath{
     this.setTrainable(rootIndex_,endIndex_,false,!false);
   }
   
+  //args are arrays of strings
+  model(inputs,outputs){
+    var i;
+    if(inputs && !Array.isArray(inputs))
+      inputs=[inputs];
+    if(outputs && !Array.isArray(outputs))
+      outputs=[outputs];
+
+    if(inputs)
+      for (i in inputs)
+        inputs[i]=this.get(inputs[i]);
+    else
+      inputs=[this.get(0)];
+    if(outputs)
+      for (i in outputs)
+        outputs[i]=this.apply(outputs[i]);
+    else
+      outputs=[this.apply()];
+
+    return tf.model({inputs:inputs,outputs:outputs});
+    
+  }
+
+  //returns a default simple model
+  Model(inputs,outputs,learningRate){
+    var m=this.model(inputs,outputs);
+    m.compile({
+      optimizer:tf.train.adam(learningRate),
+      metrics:['accuracy'],
+      loss:'meanSquaredError',
+    });
+    return m;
+    
+  }
   
 }
 tf.util.path=(name)=>{return new window._guzuTF.TFLayerPath(name);}
