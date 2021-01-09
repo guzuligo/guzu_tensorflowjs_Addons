@@ -155,7 +155,7 @@ window._guzuTF.AddCounter=class AddCounter extends tf.layers.Layer {
       this.units=this.find.length;
     }
 
-    build(){console.log(this.weight)
+    build(){//console.log(this.weight)
       this.weight_=this.addWeight('weight',[1],'float32',tf.initializers.constant({value:this.weight}));
       this.slope_=this.addWeight('slope',[1],'float32',tf.initializers.constant({value:this.slope}));
       this.scale_=this.addWeight('scale',[1],'float32',tf.initializers.constant({value:this.scale*2}));
