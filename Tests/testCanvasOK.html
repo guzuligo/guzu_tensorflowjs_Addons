@@ -159,9 +159,43 @@
                 return [drawRandom(v),predict()];
             }
 
+
+            //testers
+            function train(){
+                fit(Number(document.getElementById("ep").value || 100))
+            }
+
+            function drawR(){
+                var r=check(document.getElementById("n").value||0);
+                document.getElementById("d0").innerHTML=r[0];
+                document.getElementById("d1").innerHTML=r[1]!=-1?r[1]:"??";
+            }
         </script>
-    <body onload="onload()">
+    <body onload="onload()"><center><table><tr><td>
         <canvas id="c" width=48 height=48></canvas><br>
-        <b id="loss">LOSS</b>
+        <b id="loss">LOSS</b><br>
+        <button onclick="train()">Train</button> on <input id="ep" value=1000 size=5 />Epochs
+        <h2>Testing</h2>
+        <button onclick="drawR()">Draw</button> random <input id="n" value="5" size=1/><br>
+        Drawing [<b id="d0">?</b>], Neural Network sees [<b id="d1">?</b>]<br>
+        <sub><br><br>
+        </td></tr> </table></center>
+        <font color="gray">
+        <h3>About</h3>
+        Randomly draw numbers in different angels,
+        fonts and sizes and train the network to predict the number.<br>
+        Ideally, current network can be good enough if trained on 1000 epochs.<br>
+        <h3>Design:</h3><u>
+        Conve2d: KernelSize: 3, strides :2, filters: 8<br>
+        MaxPooling2d: poolSize: 3, strides :2<br>
+        Conve2d: KernelSize: 3, strides :2, filters: 32<br>
+        MaxPooling2d: poolSize: 3, strides :2<br>
+        Flatten<br>
+        Dense: units: 10, activation: relu<br>
+        Dense: units: 10, activation: softmax<br><br>
+        Trainable params: 28456
+    </u>
+        </sub>
+    </font>
     </body>
 </html>
