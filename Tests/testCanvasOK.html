@@ -13,11 +13,21 @@
             //model maker
             var p=tf.util.path();
             p.add("in",tf.input({shape:[48,48,1]}));
+            //p.to("map",tf.layers.map(0,255,0,1));
+            p.to("cc",tf.layers.conv2d({kernelSize:[3,3],step:[2,2],filters:8,activation:'linear'}));
+            p.to("mx",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
+            p.to("cc2",tf.layers.conv2d({kernelSize:[3,3],step:[2,2],filters:32,activation:'linear'}));
+            p.to("mx2",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
             p.to("f",tf.layers.flatten());
-            p.to("d1",tf.layers.dense({units:10}));
+            p.to("d1",tf.layers.dense({units:10,activation:'relu'}));
+            p.to("out",tf.layers.dense({units:10,activation:'softmax'}));
             //p.to("count",tf.layers.bbox());
 
+
+
+            
             var m=p.Model();//=p.model(["in"],["in"]);//tf.model({inputs:[p.get("in")],outputs:[p.apply()]});
+            m.loss='softmaxCrossEntropy';
         </script>
         <script>
 
@@ -57,9 +67,9 @@
                 cx.resetTransform();
             }
 
-            function drawRandom(){
+            function drawRandom(v){
                 var r;
-                draw(r=Math.floor(Math.random()*10),Math.floor(Math.random()*fonts.length),Math.random()*4-8,Math.random()*8-16,Math.random()*5-10,-20+Math.random()*40)
+                draw(r=v||Math.floor(Math.random()*10),Math.floor(Math.random()*fonts.length),Math.random()*4-8,Math.random()*8-16,Math.random()*5-10,-20+Math.random()*40)
                 return r;
             }
 
@@ -80,17 +90,27 @@
                         a=cx.getImageData(0,0,48,48).data;
                         inputs.push(Array.from(a));
                     }
-                    inputs=tf.tensor(inputs,[size,48,48,4]);
+                    inputs=tf.tensor(inputs,[size,48,48,4]).mul(1/255);//cuz not using getCanvasTensor
                     outputs=tf.tensor(outputs,[size]);
                     inputs=tf.guzu.removeChannels(inputs,[0,1,2]);
                     return [inputs,tf.oneHot(outputs.cast('int32'),10)];
                 });
             }
 
+            function getCanvasTensor(){
+                return tf.tidy(()=>{
+                    var a=cx.getImageData(0,0,48,48);
+                    a=Array.from(a.data);
+                    a=tf.tensor(a,[1,48,48,4]);
+                    a=tf.guzu.removeChannels(a,[0,1,2]);
+                    return a.mul(1/255);
+                });
+            };
+
             function remakeDataset(src,keep){
                 if(keep===undefined)
                     keep=Math.ceil(src[0].shape[0]/2);
-                console.log(src[0].shape[0],keep);
+                //console.log(src[0].shape[0],keep);
                 var r=tf.tidy(()=>{
                     var s=src.concat();
                     var j=makeDataset(s[0].shape[0]-keep);
@@ -107,9 +127,41 @@
                 src[0]=r[0];src[1]=r[1];
                 return r;
             }
+            var A;
+            var varDataset=true;
+            var epochs=2;
+            function fit(a=128,all){
+                if(!isNaN(a)){
+                    all=a;
+                    a=A||makeDataset();
+                    
+                }
+                else
+                if(!a)
+                    a=A||makeDataset();
+                if(all===undefined)
+                    all=10;
+                A=a;
+                if(all-->0)
+                    m.fit(a[0],a[1],{epochs:epochs,callbacks:{
+                        onEpochEnd:(A,B)=>document.getElementById("loss").innerHTML=
+                        "Loss: "+B.loss+"<br>accuricy: "+B.acc+"<br>Epochs Left: "+all}
+                    }).then(()=>{if(varDataset)remakeDataset(a);fit(a,all);})
+                    else
+                    console.log("done");
+            }
+
+            function predict(){
+                return tf.tidy(()=>m.predict(getCanvasTensor()).sub(.5).step().dataSync().indexOf(1));
+            }
+
+            function check(v){
+                return [drawRandom(v),predict()];
+            }
 
         </script>
     <body onload="onload()">
-        <canvas id="c" width=48 height=48></canvas>
+        <canvas id="c" width=48 height=48></canvas><br>
+        <b id="loss">LOSS</b>
     </body>
 </html>

@@ -256,7 +256,7 @@ window._guzuTF.SumPooling2d=class SumPooling2d extends tf.layers.Layer {
       case 'valid':
         var x=~~((inputShape[1]-this.poolSize[0])/this.strides[0]+1);
         var y=~~((inputShape[2]-this.poolSize[1])/this.strides[1]+1);
-         console.log("ee")
+         //console.log("ee")
         return [inputShape[0],x,y,inputShape[3]];
       case 'same':
         return [inputShape[0],Math.ceil(inputShape[1]/this.strides[0]),Math.ceil(inputShape[2]/this.strides[1]),inputShape[3]];
@@ -300,6 +300,7 @@ window._guzuTF.Mutation2d=class Mutation2d extends tf.layers.Layer{
     this.get=args.get;//use previous setting
     this.flip=args.flip;//true false
     this.fill=args.fill||0;
+    this.paused=args.paused||false;
     if (args.set){
       f=F[this.set]={};
       f.rotation=args.rotation||0;
@@ -336,6 +337,8 @@ window._guzuTF.Mutation2d=class Mutation2d extends tf.layers.Layer{
   call(it, kwargs){ 
     it=Array.isArray(it)?it[0]:it;
     //ones.print();
+    if(this.paused)
+      return it;
     var F=window._guzuTF.Mutation2dInfo;
     var f=F[this.set||this.get];
     if(this.set){
@@ -613,10 +616,12 @@ window._guzuTF.GuzuTfTools=class GuzuTfTools{
   
   map(low1,high1,low2,high2){
     var t=this;
+    console.log("--",t)
+    var f=(applyto)=>{//console.log(arguments)
+      return t.layerMapper(applyto,low1,high1,low2,high2);
+    };
     return{
-      apply:function(applyto){
-        return t.layerMapper(applyto,low1,high1,low2,high2);
-      }
+      apply:f
     }
   }
   
@@ -712,7 +717,8 @@ tf.layers.bbox=(args)=>{return new window._guzuTF.BoundingBoxLayer(args);};
 tf.layers.dropChannels=(args)=>{return new window._guzuTF.DropChannelsLayer(args);};
 
 
+//some needs fixing
 tf.layers.sub=window._guzuTF.guzuTfTools.sub;
 tf.layers.mul=window._guzuTF.guzuTfTools.mul;
-tf.layers.map=window._guzuTF.guzuTfTools.map;
+tf.layers.map=(a,b,c,d)=>window._guzuTF.guzuTfTools.map(a,b,c,d);
 tf.layers.pass=window._guzuTF.guzuTfTools.pass;
