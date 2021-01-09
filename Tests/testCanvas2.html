@@ -14,7 +14,15 @@
             var p=tf.util.path();
             p.add("in",tf.input({shape:[48,48,1]}));
             p.to("conv",tf.layers.conv2d({kernelSize:[2,2],strides:[2,2],filters:3,activation:'tanh'}));
-            p.to("cc",tf.layers.counter({weight:2,range:[-1.5,1.5],units:3,slope:40,scale:10,useSum:false}));
+            p.to("cc",tf.layers.counter({weight:2,
+                slope:1,
+                range:[-1.5,1.5],units:3,scale:10,useSum:false}));
+            
+            /*
+            p.get("cc").build=function(){
+                this.weight=this.addWeight('weight',[1],'float32',tf.initializers.ones()).val;
+                console.log(this.weight)
+            };*/
             p.to("conv2",tf.layers.conv2d({kernelSize:[2,2],strides:[2,2],filters:3,activation:'tanh'}));
             p.to("sum",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
             p.to("f",tf.layers.flatten());

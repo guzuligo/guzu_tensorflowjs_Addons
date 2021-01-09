@@ -122,7 +122,7 @@ window._guzuTF.AddCounter=class AddCounter extends tf.layers.Layer {
     
     constructor(args) {
       args=args||{};
-      args.trainable=false;
+      //args.trainable=!false;
       super(args);
       
       //this.xd=args.xdim;this.yd=args.ydim;this.withr=args.withr;
@@ -153,6 +153,12 @@ window._guzuTF.AddCounter=class AddCounter extends tf.layers.Layer {
           this.find.push(i*s/u+r[0]);
       }
       this.units=this.find.length;
+    }
+
+    build(){console.log(this.weight)
+      this.weight_=this.addWeight('weight',[1],'float32',tf.initializers.constant({value:this.weight}));
+      this.slope_=this.addWeight('slope',[1],'float32',tf.initializers.constant({value:this.slope}));
+      this.scale_=this.addWeight('scale',[1],'float32',tf.initializers.constant({value:this.scale*2}));
     }
   
     
@@ -203,7 +209,7 @@ window._guzuTF.AddCounter=class AddCounter extends tf.layers.Layer {
           break;
       }
       //res[0].print()
-      res[0]=it_[0].mul(tf.scalar(this.weight)).sub(tf.tensor(this.find)).mul(this.slope).pow(2).mul(tf.scalar(-1)).sigmoid().mul(this.scale*2);
+      res[0]=it_[0].mul(this.weight_.read()).sub(tf.tensor(this.find)).mul(this.slope_.read()).pow(2).mul(tf.scalar(-1)).sigmoid().mul(this.scale_.read());
       
       if (this.useSum){
         res[0]=res[0].sum(-1);//.round();
