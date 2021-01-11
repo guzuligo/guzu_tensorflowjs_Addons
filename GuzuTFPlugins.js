@@ -135,6 +135,10 @@ window._guzuTF.AddCounter=class AddCounter extends tf.layers.Layer {
       this.scale=args.scale||1;
       this.slope=args.slope||100
       this.useSum=args.useSum===undefined?true:args.useSum;
+      this.type=args.type!==undefined?args.type:1;
+
+      this.step=args.step===undefined?.499:args.step;
+      this.useSigmoid=args.useSigmoid!==false;
       this._createFindValues();
         
       //this.find=this.find.map(e=>[[e]]);
@@ -156,9 +160,12 @@ window._guzuTF.AddCounter=class AddCounter extends tf.layers.Layer {
     }
 
     build(){//console.log(this.weight)
-      this.weight_=this.addWeight('weight',[1],'float32',tf.initializers.constant({value:this.weight}));
-      this.slope_=this.addWeight('slope',[1],'float32',tf.initializers.constant({value:this.slope}));
-      this.scale_=this.addWeight('scale',[1],'float32',tf.initializers.constant({value:this.scale*2}));
+      if(this.type>0){
+        this.weight_=this.addWeight('weight',[1],'float32',tf.initializers.constant({value:this.weight}));
+        this.slope_=this.addWeight('slope',[1],'float32',tf.initializers.constant({value:this.slope}));
+        this.scale_=this.addWeight('scale',[1],'float32',tf.initializers.constant({value:this.scale*2}));
+        this.bias_=this.addWeight('bias',[this.units],'float32',tf.initializers.constant({value:1}));
+      }
     }
   
     
@@ -209,7 +216,8 @@ window._guzuTF.AddCounter=class AddCounter extends tf.layers.Layer {
           break;
       }
       //res[0].print()
-      res[0]=it_[0].mul(this.weight_.read()).sub(tf.tensor(this.find)).mul(this.slope_.read()).pow(2).mul(tf.scalar(-1)).sigmoid().mul(this.scale_.read());
+      
+      res[0]=this.callType(this.type,it_,kwargs);
       
       if (this.useSum){
         res[0]=res[0].sum(-1);//.round();
@@ -234,7 +242,50 @@ window._guzuTF.AddCounter=class AddCounter extends tf.layers.Layer {
       return res[0];
        //this.dataFormat ==='channelsFirst'
     }
+
+    callType(type,it_,kwargs){
+      var res,uu; //result,temp var
+      switch(type){
+        case 0:
+          res=it_[0].mul(this.weight)
+                .sub( tf.tensor(this.find))
+                .mul(this.slope)
+                .pow(2).mul(tf.scalar(-1));
+          res=callStep(res,{sigmoid:this.useSigmoid,step:this.step})
+              .mul(this.scale);
+          break;
+          break;
+        case 1:
+          res=it_[0].mul(this.weight_.read())
+                .sub( (uu=tf.tensor(this.find)).mul(this.bias_.read().reshape(uu.shape))  )
+                .mul(this.slope_.read())
+                .pow(2).mul(tf.scalar(-1));
+          res=this.callStep(res,{sigmoid:this.useSigmoid,step:this.step})
+              .mul(this.scale_.read());
+          break;
+
+        case 2:
+          res=it_[0].mul(this.weight_.read())
+                .sub( (uu=tf.tensor(this.find)).mul(this.bias_.read().reshape(uu.shape))  )
+                .mul(this.slope_.read())
+                .pow(2).mul(tf.scalar(-1));
+          res=this.callStep(res,{sigmoid:this.useSigmoid,step:this.step})
+              .mul(this.scale_.read());
+          break;
+      }
+      return res;//
+    }
+
+    callStep(v,args){
+      if(args.sigmoid)
+        v=v.sigmoid();
+      if(args.step!==undefined)
+        v=v.sub(args.step).step();
+      return v;
+    }
 }
+
+      
 
 tf.serialization.registerClass(window._guzuTF.AddCounter);  // Needed for serialization.
 

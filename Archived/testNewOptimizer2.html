@@ -1,0 +1,71 @@
+<html>
+    <script src='../google/tensorflow2.7.0.min.js'></script>
+        <script src='../TFLayerPath.js'></script>
+        <script src='../GuzuTFPlugins.js'></script>
+        <script src="../GuzuDataTools.js"></script>
+        <script src="../layerFixedConv2d.js"></script>
+        <script src="../optX2.js"></script>
+        <script>
+            var p=tf.util.path();
+            p.add("in",tf.input({shape:[1]}));
+            p.to("d1",tf.layers.dense({units:10}));
+            p.to("d2",tf.layers.dense({units:10}));
+            p.to("out",tf.layers.dense({units:1}));
+
+            var inputs=tf.tensor([
+                [1],[2],[3],[4],[5]            
+            ]);
+            var outputs=tf.tensor([
+                [1],[2],[-1],[-2],[0]            
+            ]);
+            var m=tf.model({inputs:[p.get("in")],outputs:[p.apply()]});
+
+            m.compile({
+                optimizer:'adam',
+                loss:"meanSquaredError"
+            })
+            var o=new optX();
+            init();
+            for(var i=0;i<10;i++)o.add();
+
+            function ev(e){
+                if(e){clean();for(var i=0;i<3;i++){o.addMutate();o.add();}}
+                return o.evaluate(inputs,outputs);
+            }
+
+            function init(){
+                o.useModel(m);
+            }
+
+            function test(doelse){
+                //o.set(m,o.best);
+                //console.log(o.best,o.getBest().delta,"loss:",m.evaluate(inputs,outputs).dataSync()[0]);
+                
+                init();
+                //console.log("loss:",m.evaluate(inputs,outputs).dataSync()[0]);
+                return ev(doelse);
+            }
+
+            var i=10;
+            function repeat(ii,e){
+                if(ii)i=ii;
+                if(i-->0)test(e).onReady=()=>repeat();
+            }
+            function clean(max=10){
+                o.cleanSeeders(max,true);o.addMultiply(0,1.1);o.addMultiply(0,0.5);
+            }
+
+            function fit(ii){
+                m.fit(inputs,outputs,{epochs:ii,callbacks:{onEpochEnd:console.log}})
+            }
+
+            function check(){
+                return "loss: "+m.evaluate(inputs,outputs).dataSync()[0];
+            }
+
+            //init();
+        </script>
+    <body>
+
+    </body>
+</html>

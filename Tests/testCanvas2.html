@@ -13,28 +13,37 @@
             //model maker
             var p=tf.util.path();
             p.add("in",tf.input({shape:[48,48,1]}));
-            p.to("conv",tf.layers.conv2d({kernelSize:[2,2],strides:[2,2],filters:3,activation:'tanh'}));
-            p.to("cc",tf.layers.counter({weight:2,
-                slope:1,
-                range:[-1.5,1.5],units:3,scale:10,useSum:false}));
-            
+            //p.to('co',tf.layers.coord());
+            p.to("conv",tf.layers.conv2d({kernelSize:[3,3],strides:[3,3],filters:1,activation:'linear',trainable:false}));
+            p.to("cc",tf.layers.counter({weight:1,
+                slope:1,type:2,
+                range:[-1,1],units:5,scale:10,useSum:!true}));
+            //p.to("act",tf.layers.activation({activation:'hardSigmoid'}))
             /*
             p.get("cc").build=function(){
                 this.weight=this.addWeight('weight',[1],'float32',tf.initializers.ones()).val;
                 console.log(this.weight)
             };*/
-            p.to("conv2",tf.layers.conv2d({kernelSize:[2,2],strides:[2,2],filters:3,activation:'tanh'}));
-            p.to("sum",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
+            p.to("sum",tf.layers.sumPooling2d({poolSize:[2,2],strides:[2,2]}));
+            //p.to("conv2",tf.layers.depthwiseConv2d({kernelSize:[4,4],strides:[2,2],
+            //    filters:1,activation:'tanh'}));
+            //p.to('re',tf.layers.reshape({targetShape:[110,110,2]}));
+            //p.to("max",tf.layers.maxPooling2d({poolSize:[2,2],strides:[2,2]}));
+            //p.to("sum2",tf.layers.maxPooling2d({poolSize:[4,4],strides:[2,2]})); 
             p.to("f",tf.layers.flatten());
             
             
            
             
-            p.to("d1",tf.layers.dense({units:15,activation:'tanh'}));
+            //p.to("d1",tf.layers.dense({units:15,activation:'tanh'}));
             p.to("d2",tf.layers.dense({units:15,activation:'linear'}));
             p.to("out",tf.layers.dense({units:10,activation:'softmax'}));
             //p.to("count",tf.layers.bbox());
 
+            function about(){
+                var we=p.get("cc").getWeights();//m.layers[2].getWeights();
+                for(var i in we)we[i].print();
+            }
 
 
             
