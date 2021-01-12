@@ -16,7 +16,7 @@
                 [1],[2],[3],[4],[5]            
             ]);
             var outputs=tf.tensor([
-                [1],[2],[-1],[-2],[0]            
+                [1],[2],[4],[5],[7]            
             ]);
             var m=tf.model({inputs:[p.get("in")],outputs:[p.apply()]});
 
@@ -24,32 +24,32 @@
                 optimizer:'adam',
                 loss:"meanSquaredError"
             })
-            var o=new optX();
-            init();
-            for(var i=0;i<10;i++)o.add();
+            var o=new optX2(m);
+            //init();
+            //for(var i=0;i<10;i++)o.add();
 
             function ev(e){
-                if(e){clean();for(var i=0;i<3;i++){o.addMutate();o.add();}}
-                return o.evaluate(inputs,outputs);
+                //if(e){clean();for(var i=0;i<3;i++){o.addMutate();o.add();}}
+                return o.fit(inputs,outputs);
             }
 
             function init(){
-                o.useModel(m);
+                //o.useModel(m);
             }
 
-            function test(doelse){
+            function test(epochs=20){
                 //o.set(m,o.best);
                 //console.log(o.best,o.getBest().delta,"loss:",m.evaluate(inputs,outputs).dataSync()[0]);
-                
-                init();
+                o.fit(inputs,outputs,{epochs:epochs,callbacks:{onEpochEnd:(a,b)=>console.log(o.state+" loss:"+b.loss)}})
+                //init();
                 //console.log("loss:",m.evaluate(inputs,outputs).dataSync()[0]);
-                return ev(doelse);
+                //return ev(doelse);
             }
 
             var i=10;
             function repeat(ii,e){
                 if(ii)i=ii;
-                if(i-->0)test(e).onReady=()=>repeat();
+                if(i-->0)test(e).onEpochEnd=()=>repeat();
             }
             function clean(max=10){
                 o.cleanSeeders(max,true);o.addMultiply(0,1.1);o.addMultiply(0,0.5);
@@ -66,6 +66,6 @@
             //init();
         </script>
     <body>
-
+        <dev id="1">--</dev>
     </body>
 </html>

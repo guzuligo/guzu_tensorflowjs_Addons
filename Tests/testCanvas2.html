@@ -9,6 +9,7 @@
         <script src='../GuzuTFPlugins.js'></script>
         <script src="../GuzuDataTools.js"></script>
         <script src="../layerFixedConv2d.js"></script>
+        <script src="../optX2.js"></script>
         <script>
             //model maker
             var p=tf.util.path();
@@ -151,7 +152,9 @@
             var A;
             var varDataset=true;
             var epochs=2;
-            function fit(a=128,all){
+            var o=new optX2(m);
+            function fit(a=128,all,h){
+                if(!h)h=o;
                 if(!isNaN(a)){
                     all=a;
                     a=A||makeDataset();
@@ -164,10 +167,12 @@
                     all=10;
                 A=a;
                 if(all-->0)
-                    m.fit(a[0],a[1],{epochs:epochs,callbacks:{
+                    h.fit(a[0],a[1],{epochs:epochs,callbacks:{
                         onEpochEnd:(A,B)=>document.getElementById("loss").innerHTML=
-                        "Loss: "+B.loss+"<br>accuricy: "+B.acc+"<br>Epochs Left: "+all}
-                    }).then(()=>{if(varDataset)remakeDataset(a);fit(a,all);})
+                        "Loss: "+B.loss+"<br>accuricy: "+B.acc+"<br>Epochs Left: "+all
+                        
+                    }
+                    }).then(()=>{if(varDataset)remakeDataset(a);fit(a,all,h);})
                     else
                     console.log("done");
             }
