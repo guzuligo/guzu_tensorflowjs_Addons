@@ -8,8 +8,10 @@
         <script>
             var p=tf.util.path();
             p.add("in",tf.input({shape:[1]}));
-            p.to("d1",tf.layers.dense({units:10}));
-            p.to("d2",tf.layers.dense({units:10}));
+            var i=1;
+            for(var i=0;i<10;i++)
+            p.to("d"+i,tf.layers.dense({units:10}));
+            //p.to("d2",tf.layers.dense({units:10}));
             p.to("out",tf.layers.dense({units:1}));
 
             var inputs=tf.tensor([
@@ -40,7 +42,10 @@
             function test(epochs=20){
                 //o.set(m,o.best);
                 //console.log(o.best,o.getBest().delta,"loss:",m.evaluate(inputs,outputs).dataSync()[0]);
-                o.fit(inputs,outputs,{epochs:epochs,callbacks:{onEpochEnd:(a,b)=>console.log(o.state+" loss:"+b.loss)}})
+                o.fit(inputs,outputs,{epochs:epochs,callbacks:{
+                    onEpochEnd:(a,b)=>{if(false)console.log(o.state+" loss:"+b.loss)},
+                    onTrainEnd:()=>console.log("Done"),
+                }})
                 //init();
                 //console.log("loss:",m.evaluate(inputs,outputs).dataSync()[0]);
                 //return ev(doelse);

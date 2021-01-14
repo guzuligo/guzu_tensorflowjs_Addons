@@ -16,7 +16,7 @@ window._guzuTF.optX=class optX{
 
     makeMutatedSeeder(seederIndex=0,level=0){
         
-        var seeder=Object.assign({},this.seeders[seederIndex]);
+        var seeder=this._parse(this.seeders[seederIndex]);
         seeder.delta=seeder.loss=undefined;
         if(level>seeder.config.length)
             level=seeder.config.length;
@@ -25,7 +25,10 @@ window._guzuTF.optX=class optX{
                 seeder.config[0]=this.mutateSeederConfig(  seeder.config[0]);
         else{
                 if(seeder.config.length===level)
-                    seeder.config.push(this.newSeederConfig({mean:(10**-level)*seeder.config[level-1].mean}));
+                    seeder.config.push(this.newSeederConfig({
+                        mean:(10**-level) * (seeder.config[level-1].mean),
+                        scale:(10**-level)* (seeder.config[level-1].scale)
+                    }));
                 else
                     seeder.config[level]=
                         this.mutateSeederConfig( seeder.config[level],{
@@ -40,8 +43,11 @@ window._guzuTF.optX=class optX{
         return seeder;
     }
 
+    _parse(x){
+        return JSON.parse(JSON.stringify(x));
+    }
     makeScaledSeeder(seederIndex=0,scale_=.5,shift=0){
-        var seeder=Object.assign({},this.seeders[seederIndex]);
+        var seeder=this._parse(this.seeders[seederIndex]);
         seeder.delta=seeder.loss=undefined;
         for(var i=0;i<seeder.config.length;i++){
             var _00=seeder.config[i].scale;
@@ -75,7 +81,7 @@ window._guzuTF.optX=class optX{
         args.scale=this._def(args.scale,.01)*(Math.random()*2-1);
         args.bias=this._def(args.bias,.01)*(Math.random()*2-1);
 
-        var res= Object.assign({},config);
+        var res= this._parse(config);
         //seeder.delta=seeder.loss=undefined;
         res.scale+=args.scale;
         res.bias+=args.bias;
@@ -114,18 +120,19 @@ window._guzuTF.optX=class optX{
         var l=this.weights.length;
         var w;
         var seeder=this.seeders[seederIndex];
+        var sfunc=tf.randomNormal;
         for(var i=0;i<l;i++){
             var w=this.weights[i];
             w=tf.tidy(()=>{
                 for (var j=0;j<seeder.config.length;j++){
                     var s=seeder.config[j];
 
-                    w=w.add(s.func(w.shape,s.mean,s.deviation,'float32',s.seed+s.next*i)).pow(s.pow).mul(s.scale).add(s.bias);
+                    w=w.add(sfunc(w.shape,s.mean,s.deviation,'float32',s.seed+s.next*i)).pow(s.pow).mul(s.scale).add(s.bias);
                     //document.getElementById("1").innerHTML=("scale: "+s.scale+"<br>bias: "+s.bias)+"<br>";
                     if(!Number.isFinite(s.scale))
                         console.log("INFINITY!");
                     if(s.notAll)
-                        w=w.mul(s.func(w.shape,1,1,'float32',-(s.seed+s.next*i)-10.99).greater(tf.zerosLike(w).sub(s.notAll)));
+                        w=w.mul(sfunc(w.shape,1,1,'float32',-(s.seed+s.next*i)-10.99).greater(tf.zerosLike(w).sub(s.notAll)));
                 }
                 return w;
             });
@@ -232,6 +239,7 @@ window._guzuTF.optX=class optX{
     }
 
     removeLoss(){
+        //this.modelLoss=undefined;
         var i=-1;while(++i<this.seeders.length)
             this.seeders[i].loss=this.seeders[i].delta=undefined;
     }
@@ -314,6 +322,7 @@ class optX2{
         var o=this.optX;
         
         if(o.best!=-1){
+            console.log("Success after "+this.state)
             this.state="success";
             this._instate.searchTries=1;
             this._retries=0;
@@ -336,20 +345,22 @@ class optX2{
                         //half LR, half smaller LR
                         scale:i<this.searchSize*.5?
                             o.learningRate:
-                            o.learningRate*(2**-st)
+                            o.learningRate*(10**-st)
                     });
                     o.add({
-                        //half LR, half smaller LR
+                        //half LR, half bigger LR
                         scale:i<this.searchSize*.5?
                             o.learningRate:
-                            o.learningRate*(2**st)
+                            o.learningRate*(10**st)
                     });
                 }
                 
                 break;
             case "success":
+                console.log("success")
                 //keep some
                 var ss=Math.ceil(this.searchSize*.3)||1;
+                o.cleanSeeders(0);
                 o.cleanSeeders(ss,true);
                 o.removeLoss();
                 //
@@ -358,30 +369,30 @@ class optX2{
                 
                 i=0;
                 while(o.seeders.length<this.searchSize)
-                    o.addMutate((i++)%ss,2);
+                    o.addMutate((i++)%ss,i%3);
 
                 break;
             case "failure":
                 //keep some
-                var ss=(this.searchSize*.05)||1;
-                
-                o.cleanSeeders(ss,true);
-                
+                //var ss=Math.ceil(this.searchSize*.05)||1;
+                //console.log("index:"+o.index)
+                o.sortSeeders();o.seeders=[o.seeders[0]];
+                console.log(this._retries+" least bad: "+o.seeders[0].loss+"\t\t\tmodLoss:"+o.modelLoss);
+                //epic fail
+                if(isNaN(o.seeders[0].loss) || o.seeders[0].loss>1e10){
+                    console.log("EPIC FAIL");
+                    this.state="search";
+                    return this._nextGeneration();
+                }
+
                 o.removeLoss();
                 var i=0;
                 //var ss=Math.ceil(this.searchSize*.1)||1;
-                o.seeders=o.seeders.slice(0,ss);
+                //o.seeders=o.seeders.slice(0,ss);
                 
                 while(o.seeders.length<this.searchSize){
-                    var ii=Math.floor(i*.2)%ss;
-                    o.addMultiply(ii,Math.random()+.8,(Math.random()*2-1)*.01);
-                    o.addMultiply(ii,-.8-Math.random(),(Math.random()*2-1)*.01);
-                    //o.addMultiply(ii,0.8+Math.random()*1.5,.0001*(Math.random()*2-1));
-                    //o.addMultiply(ii,-0.1-Math.random()*1.5,.0001*(Math.random()*2-1));
+                    o.addMutate(0,i%5);
                     i++;
-                    //o.addMutate(0,2);
-                    //o.addMutate(0,2);
-                    o.addMutate(ii,1);
                 }
                 
 

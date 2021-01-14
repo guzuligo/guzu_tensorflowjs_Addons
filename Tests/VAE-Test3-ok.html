@@ -9,6 +9,7 @@
         <script src='../GuzuTFPlugins.js'></script>
         <script src="../GuzuDataTools.js"></script>
         <script src="../layerFixedConv2d.js"></script>
+        <script src="../optX2.js"></script>
           <script>
             function _(a){return document.getElementById(a)};
             tf.enableProdMode();
@@ -191,6 +192,8 @@
                 ,metrics:['accuracy']
             });
             
+            var trainer0=trainer;
+            var o=new optX2(trainer);
             //
             
             
@@ -244,11 +247,11 @@
               return miniPromis;
               
             }
-            
+            var _trainer=trainer;
             function train(eps=1){
               _("stat").innerHTML="Training";
               predict(0).then(()=>{
-              trainer.fit([t1],[t1],{epochs:eps,
+              _trainer.fit([t1],[t1],{epochs:eps,
                                       callbacks: {onEpochEnd: (epoch, logs) => _("loss").innerHTML="LOSS: "+(logs.loss)}
                                     }).then(()=>{console.log("======="+(_("stat").innerHTML="Done")+"=======");predict(0)});
               })
