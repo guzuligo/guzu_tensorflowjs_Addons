@@ -22,7 +22,7 @@ window._guzuTF.TFLayerPath=class TFLayerPath{
   */
   
   add(index_,layer_,applytoIndex=-1){
-    if(this.layerNames[index_]){throw("Name conflect: "+index_)}
+    if(this.layerNames[index_]){throw("[tf.util.path] Name conflect: "+index_)}
     this.layerNames[index_]={id:this.layerPath.length,defaults:{trainable:layer_.trainable}};
     this.layerPath.push([index_,layer_,applytoIndex,-1]);//[ name, tf.layer , #to apply to, redirect ]
     this._lastIndex=index_;
@@ -148,35 +148,42 @@ window._guzuTF.TFLayerPath=class TFLayerPath{
   }
   
   //args are arrays of strings
-  model(inputs,outputs){
+  model(inputNames,outputNames){
     var i;
-    if(inputs && !Array.isArray(inputs))
-      inputs=[inputs];
-    if(outputs && !Array.isArray(outputs))
-      outputs=[outputs];
+    if(inputNames && !Array.isArray(inputNames))
+      inputNames=[inputNames];
+    if(outputNames && !Array.isArray(outputNames))
+      outputNames=[outputNames];
 
-    if(inputs)
-      for (i in inputs)
-        inputs[i]=this.get(inputs[i]);
+    if(inputNames)
+      for (i in inputNames)
+        inputNames[i]=this.get(inputNames[i]);
     else
-      inputs=[this.get(0)];
-    if(outputs)
-      for (i in outputs)
-        outputs[i]=this.apply(outputs[i]);
+      inputNames=[this.get(0)];
+    if(outputNames)
+      for (i in outputNames)
+        outputNames[i]=this.apply(outputNames[i]);
     else
-      outputs=[this.apply()];
+      outputNames=[this.apply()];
 
-    return tf.model({inputs:inputs,outputs:outputs});
+    return tf.model({inputs:inputNames,outputs:outputNames});
     
   }
 
   //returns a default simple model
-  Model(inputs,outputs,learningRate){
-    var m=this.model(inputs,outputs);
+  Model(inputNames,outputNames,learningRate){
+    var args;
+    if (!isNaN(learningRate) || learningRate===undefined)
+      args={learningRate:learningRate||0.001};
+    else
+      args=learningRate;
+    console.log(args)
+
+    var m=this.model(inputNames,outputNames);
     m.compile({
-      optimizer:tf.train.adam(learningRate),
-      metrics:['accuracy'],
-      loss:'meanSquaredError',
+      optimizer:args.optimizer||tf.train.adam(args.learningRate||0.001),
+      metrics:args.metrics||['accuracy'],
+      loss:args.loss||'meanSquaredError',
     });
     return m;
     
