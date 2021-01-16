@@ -22,7 +22,7 @@
             //p.to("lb",tf.layers.simpleRNN({units:24,returnSequences:!true,activation:'tanh'}));
            //p.to("ls2",tf.layers.lstm({units:10}));
             //p.to("map",tf.layers.map(0,255,0,1));
-            p.to("cc3",tf.layers.conv2d({kernelSize:[3,3],step:[1,1],filters:4,activation:'linear'}));
+            p.to("cc3",tf.layers.conv2d({kernelSize:[3,3],step:[1,1],filters:4,activation:'elu'}));
             p.to("mx3",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
             
             
@@ -33,10 +33,10 @@
 
 
 
-            p.to("cc2",tf.layers.conv2d({kernelSize:[3,3],step:[2,2],filters:32,activation:'linear'}));
+            p.to("cc2",tf.layers.conv2d({kernelSize:[3,3],step:[2,2],filters:32,activation:'elu'}));
             p.to("mx2",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
             p.to("f",tf.layers.flatten());
-            p.to("d1",tf.layers.dense({units:10,activation:'relu'}));
+            p.to("d1",tf.layers.dense({units:10,activation:'elu'}));
             p.to("out",tf.layers.dense({units:10,activation:'softmax'}));
 
             
