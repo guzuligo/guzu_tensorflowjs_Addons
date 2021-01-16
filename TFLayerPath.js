@@ -187,7 +187,7 @@ window._guzuTF.TFLayerPath=class TFLayerPath{
       args={learningRate:learningRate||0.001};
     else
       args=learningRate;
-    console.log(args)
+    //console.log(args)
 
     var m=this.model(inputNames,outputNames);
     m.compile({

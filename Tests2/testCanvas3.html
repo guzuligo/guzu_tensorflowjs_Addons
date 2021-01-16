@@ -15,15 +15,15 @@
             p.add("in",tf.input({shape:[48,48,1]}));
             
             //p.to("re",tf.layers.reshape({targetShape:[48*48]}));
-            p.to("b",tf.layers.effect.blur({kernelSize:[5,5],strides:[3,3],fade:.5}));
+            //p.to("b",tf.layers.avgPool2d({poolSize:[2,2],strides:[2,2]}));
             //p.to("av",tf.layers.avgPooling2d({poolSize:[2,2],strides:[2,2]}));
             //p.to("re2",tf.layers.reshape({targetShape:[16,16]}));
             //p.to("la",tf.layers.simpleRNN({units:48*2,returnSequences:!true,activation:'linear'}));
             //p.to("lb",tf.layers.simpleRNN({units:24,returnSequences:!true,activation:'tanh'}));
            //p.to("ls2",tf.layers.lstm({units:10}));
             //p.to("map",tf.layers.map(0,255,0,1));
-            //p.to("cc",tf.layers.conv2d({kernelSize:[3,3],step:[2,2],filters:1,activation:'linear'}));
-            //p.to("mx",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
+            p.to("cc3",tf.layers.conv2d({kernelSize:[3,3],step:[1,1],filters:4,activation:'linear'}));
+            p.to("mx3",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
             
             
             //p.to("f",tf.layers.flatten());
@@ -33,16 +33,19 @@
 
 
 
-            p.to("cc",tf.layers.conv2d({kernelSize:[3,3],step:[1,1],filters:6,activation:'linear'}));
-            p.to("mx",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
-            //p.to("cc2",tf.layers.conv2d({kernelSize:[3,3],step:[2,2],filters:32,activation:'linear'}));
-            //p.to("mx2",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
+            p.to("cc2",tf.layers.conv2d({kernelSize:[3,3],step:[2,2],filters:32,activation:'linear'}));
+            p.to("mx2",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
             p.to("f",tf.layers.flatten());
             p.to("d1",tf.layers.dense({units:10,activation:'relu'}));
             p.to("out",tf.layers.dense({units:10,activation:'softmax'}));
 
             
             var m=p.Model();//=p.model(["in"],["in"]);//tf.model({inputs:[p.get("in")],outputs:[p.apply()]});
+            
+
+            p.add("border",tf.layers.effect.border(p.get("in")),"in");
+            var m2=p.Model();
+
             m.loss='softmaxCrossEntropy';
         </script>
         <script>
@@ -83,9 +86,20 @@
                 cx.resetTransform();
             }
 
+            function drawM2(){
+                tf.tidy(()=>{
+                    var s=tf.browser.fromPixels(document.getElementById("c"),4).split(4,-1)[3];
+                    //s.max().print();
+                    s=m2.predict(s.expandDims(0));
+                    s=s.reshape([48,48,1]);//.add(255)
+                    tf.browser.toPixels(s.mul(1/255),document.getElementById("c2"));
+                });
+            }
+
             function drawRandom(v){
                 var r;
-                draw(r=v||Math.floor(Math.random()*10),Math.floor(Math.random()*fonts.length),Math.random()*4-8,Math.random()*8-16,Math.random()*5-10,-20+Math.random()*40)
+                draw(r=v||Math.floor(Math.random()*10),Math.floor(Math.random()*fonts.length),Math.random()*4-8,
+                Math.random()*20-10,Math.random()*10-5,-20+Math.random()*40)
                 return r;
             }
 
@@ -185,14 +199,15 @@
                 var r=check(document.getElementById("n").value||0);
                 document.getElementById("d0").innerHTML=r[0];
                 document.getElementById("d1").innerHTML=r[1]!=-1?r[1]:"??";
+                
             }
         </script>
     <body onload="onload()"><center><table><tr><td>
-        <canvas id="c" width=48 height=48></canvas><br>
+        <canvas id="c" width=48 height=48></canvas><canvas id="c2" width=48 height=48></canvas><br>
         <b id="loss">LOSS</b><br>
         <button onclick="train()">Train</button> on <input id="ep" value=1000 size=5 />Epochs
         <h2>Testing</h2>
-        <button onclick="drawR()">Draw</button> random <input id="n" value="5" size=1/><br>
+        <button onclick="drawR();drawM2();">Draw</button> random <input id="n" value="5" size=1/><br>
         Drawing [<b id="d0">?</b>], Neural Network sees [<b id="d1">?</b>]<br>
         <sub><br><br>
         </td></tr> </table></center>
