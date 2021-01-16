@@ -26,11 +26,13 @@ window._guzuTF.TFLayerPath=class TFLayerPath{
     this.layerNames[index_]={id:this.layerPath.length,defaults:{trainable:layer_.trainable}};
     this.layerPath.push([index_,layer_,applytoIndex,-1]);//[ name, tf.layer , #to apply to, redirect ]
     this._lastIndex=index_;
+    return this;
   }
   
   //connects last added to new add
   to(index_,layer_){
     this.add(index_,layer_,this._lastIndex);
+    return this;
   }
   
   
@@ -98,7 +100,14 @@ window._guzuTF.TFLayerPath=class TFLayerPath{
    * instead of using this path, use other path index
   */
   redirect(name_,to_=-1){
+    if(to_!=-1){
+      var to_2=this.getIndex(to_);
+      if(to_2===undefined){to_=-1;console.warn("[tf.util.path] Unable to redirect '"+name_+"' to "+to_);}
+      else to_=to_2;
+    }
+
     this.getPath(name_)[3]=to_;
+    return this;
   }
   
   /*
@@ -108,6 +117,7 @@ window._guzuTF.TFLayerPath=class TFLayerPath{
   replace(index_,layer_){
     var l_=(Array.isArray(layer_)||typeof layer_==='string')?2:1;//console.log("replacing:"+l_)
     this.getPath(index_)[l_]=layer_;
+    return this;
   }
   /*
    * Switch between trainable state and untrainable state
