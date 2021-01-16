@@ -4,7 +4,10 @@
         <title>Making Template</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
         <script src='../google/tensorflow2.7.0.min.js'></script>
+        <script src="../google/tfjs-vis@1.4.3.js"> </script>
+
         <script src='../TFLayerPath.js'></script>
         <script src='../GuzuTFPlugins.js'></script>
         <script src="../GuzuDataTools.js"></script>
@@ -14,21 +17,24 @@
             var p=tf.util.path();
             p.add("in",tf.input({shape:[5,1]}));
             //p.to("lstm",tf.layers.lstm({shape:[5,1],units:10,returnSequences:true}));
-            p.to("lstm2",tf.layers.lstm({shape:[5,1],units:30}));
+            p.to("lstm2",tf.layers.lstm({shape:[5,1],units:8}));
             //p.to("f",tf.layers.flatten())
             //p.to("dense1",tf.layers.dense({units:20}))
             p.to("dense",tf.layers.dense({units:1}))
 
             var inputs =tf.randomNormal([300,5,1]);
-            var outputs=tf.randomNormal([300,1]).greater(.8).mul(1);
+            var outputs=tf.randomNormal([300,1]);//.greater(.8).mul(1);
             
             var m=p.Model(0,0,{learningRate:0.01});
 
+            const surface = { name: 'show.fitCallbacks', tab: 'Training' };
             function fit(epochs){
-                m.fit(inputs,outputs,{epochs:epochs,callbacks:{
+                var callbacks={
                     onEpochEnd:(a,b)=>{show(b.loss,b.acc)},
                     onTrainEnd:()=>document.getElementById("acc").innerHTML+="<br>DONE"
-                }})
+                };
+                callbacks=tfvis.show.fitCallbacks(surface, ['loss', 'acc']);
+                m.fit(inputs,outputs,{epochs:epochs,batchSize:100,callbacks:callbacks})
             }
             function show(a,b){
                 document.getElementById("loss").innerHTML=a;
@@ -37,6 +43,19 @@
 
             function check(){
                 for(var i=0;i<inputs.shape[0];i++)m.predict(inputs.slice(i,1)).sub(outputs.slice(i,1)).print();
+            }
+
+            function evaluation(){
+                var e=[0,0,0,0,0];
+                var f=()=>{
+                    for(var i=0;i<inputs.shape[0];i++){
+                        var a= m.predict(inputs.slice(i,1)).sub(outputs.slice(i,1)).dataSync()[0];
+                        a=a<0?-a:a;
+                        if(a<0.001)e[0]++;else if(a<0.01)e[1]++;else if(a<0.1)e[2]++;else if(a<0.26)e[3]++;else e[4]++;
+                    };
+                    return e;
+                }
+                return tf.tidy(f);
             }
         </script>
         <body>
