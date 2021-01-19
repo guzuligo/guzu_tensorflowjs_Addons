@@ -98,7 +98,7 @@
 
             function drawRandom(v){
                 var r;
-                draw(r=v||Math.floor(Math.random()*10),Math.floor(Math.random()*fonts.length),Math.random()*4-8,
+                draw(r=v||Math.floor(Math.random()*10),Math.floor(Math.random()*fonts.length),Math.random()*16-8,
                 Math.random()*20-10,Math.random()*10-5,-20+Math.random()*40)
                 return r;
             }
@@ -141,6 +141,12 @@
                 var fromStart=false;
                 if(keep===undefined)
                     keep=Math.ceil(src[0].shape[0]/2);
+
+                //percentage?
+                if(keep>-1 && keep<1 && keep!=0){
+                    keep=Math.ceil(src[0].shape[0]*keep);
+                }
+
                 if(keep<0){
                     keep=-keep;
                     fromStart=true;
