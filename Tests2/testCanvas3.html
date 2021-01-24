@@ -17,12 +17,18 @@
             //p.to("re",tf.layers.reshape({targetShape:[48*48]}));
             //p.to("b",tf.layers.avgPool2d({poolSize:[2,2],strides:[2,2]}));
             //p.to("av",tf.layers.avgPooling2d({poolSize:[2,2],strides:[2,2]}));
-            p.to("cc3",tf.layers.conv2d({kernelSize:[3,3],step:[1,1],filters:3,activation:'relu'}));
+
+
+
+            p.to("cc3",tf.layers.conv2d({kernelSize:[3,3],step:[1,1],filters:3,trainable:false,activation:'linear'}));
+            
             p.to("mx3",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
-            p.to("cc3b",tf.layers.conv2d({kernelSize:[3,3],step:[1,1],filters:16,activation:'relu'}));
+            p.to("cc3b",tf.layers.conv2d({kernelSize:[3,3],step:[1,1],filters:16,activation:'linear'}));
             p.to("mx3b",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
-            p.to("cc3c",tf.layers.conv2d({kernelSize:[3,3],step:[1,1],filters:64,activation:'relu'}));
+            p.to("cc3c",tf.layers.conv2d({kernelSize:[3,3],step:[1,1],filters:64,activation:'linear'}));
             p.to("mx3c",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
+
+
             //p.to("re2",tf.layers.reshape({targetShape:[9*2,9]}));
             //p.to("la",tf.layers.simpleRNN({units:8,returnSequences: true,activation:'tanh'}));
             //p.to("lb",tf.layers.simpleRNN({units:8,returnSequences:!true,activation:'linear'}));
@@ -41,11 +47,13 @@
 
             //p.to("cc2",tf.layers.conv2d({kernelSize:[3,3],step:[2,2],filters:1,activation:'elu'}));
             //p.to("mx2",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
+
+
             p.to("f",tf.layers.flatten());
-
             p.to("out",tf.layers.dense({units:10,activation:'softmax'}));
-
+            //p.to("cn",tf.layers.counter({units:10,range:[-.5,.5],slope:20,useSum:!false,type:1,weight:100}))
             
+            //p.to("act",tf.layers.softmax({axis:-1}));
             var m=p.Model();//=p.model(["in"],["in"]);//tf.model({inputs:[p.get("in")],outputs:[p.apply()]});
             
 

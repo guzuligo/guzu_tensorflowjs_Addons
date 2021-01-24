@@ -122,7 +122,7 @@ window._guzuTF.AddCounter=class AddCounter extends tf.layers.Layer {
     
     constructor(args) {
       args=args||{};
-      //args.trainable=!false;
+      args.trainable=args.trainable===undefined?args.type>0:args.trainable;
       super(args);
       
       //this.xd=args.xdim;this.yd=args.ydim;this.withr=args.withr;
@@ -245,18 +245,19 @@ window._guzuTF.AddCounter=class AddCounter extends tf.layers.Layer {
 
     callType(type,it_,kwargs){
       var res,uu; //result,temp var
+      if(Array.isArray(it_))
+        it_=it_[0];
       switch(type){
         case 0:
-          res=it_[0].mul(this.weight)
+          res=it_.mul(this.weight)
                 .sub( tf.tensor(this.find))
                 .mul(this.slope)
                 .pow(2).mul(tf.scalar(-1));
-          res=callStep(res,{sigmoid:this.useSigmoid,step:this.step})
+          res=this.callStep(res,{sigmoid:this.useSigmoid,step:this.step})
               .mul(this.scale);
           break;
-          break;
         case 1:
-          res=it_[0].mul(this.weight_.read())
+          res=it_.mul(this.weight_.read())
                 .sub( (uu=tf.tensor(this.find)).mul(this.bias_.read().reshape(uu.shape))  )
                 .mul(this.slope_.read())
                 .pow(2).mul(tf.scalar(-1));
@@ -265,12 +266,21 @@ window._guzuTF.AddCounter=class AddCounter extends tf.layers.Layer {
           break;
 
         case 2:
-          res=it_[0].mul(this.weight_.read())
+          res=it_.mul(this.weight_.read())
                 .sub( (uu=tf.tensor(this.find)).mul(this.bias_.read().reshape(uu.shape))  )
                 .mul(this.slope_.read())
                 .pow(2).mul(tf.scalar(-1));
           res=this.callStep(res,{sigmoid:this.useSigmoid,step:this.step})
               .mul(this.scale_.read());
+          break;
+
+        case -1://TODO: didn't start testing
+        //console.log(this.slope_)
+          res=it_.mul(this.weight).sub(tf.tensor(this.find)).pow(2);
+          res=tf.scalar(1).div(res.mul(this.slope).add(.5)).mul(.5);
+          //res=tf.scalar(1).div(res).sub(1);
+
+          res=res.mul(this.scale);
           break;
       }
       return res;//
