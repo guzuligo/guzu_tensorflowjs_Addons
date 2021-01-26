@@ -23,9 +23,9 @@
             p.to("cc3",tf.layers.conv2d({kernelSize:[3,3],step:[1,1],filters:3,trainable:false,activation:'linear'}));
             
             p.to("mx3",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
-            p.to("cc3b",tf.layers.conv2d({kernelSize:[3,3],step:[1,1],filters:16,activation:'linear'}));
+            p.to("cc3b",tf.layers.conv2d({kernelSize:[2,2],step:[1,1],filters:30,activation:'linear'}));
             p.to("mx3b",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
-            p.to("cc3c",tf.layers.conv2d({kernelSize:[3,3],step:[1,1],filters:64,activation:'linear'}));
+            p.to("cc3c",tf.layers.conv2d({kernelSize:[2,2],step:[1,1],filters:300,activation:'linear'}));
             p.to("mx3c",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
 
 
@@ -50,6 +50,7 @@
 
 
             p.to("f",tf.layers.flatten());
+            //p.to("ready",tf.layers.dense({units:5,activation:'linear'}));
             p.to("out",tf.layers.dense({units:10,activation:'softmax'}));
             //p.to("cn",tf.layers.counter({units:10,range:[-.5,.5],slope:20,useSum:!false,type:1,weight:100}))
             
@@ -191,17 +192,17 @@
             function fit(a=128,all){
                 if(!isNaN(a)){
                     all=a;
-                    a=A||makeDataset();
+                    a=A||makeDataset(16);
                     
                 }
                 else
                 if(!a)
-                    a=A||makeDataset();
+                    a=A||makeDataset(80);
                 if(all===undefined)
                     all=10;
                 A=a;
                 if(all-->0)
-                    m.fit(a[0],a[1],{epochs:epochs,callbacks:{
+                    m.fit(a[0],a[1],{epochs:epochs,batchSize:a[0].shape[0],callbacks:{
                         onEpochEnd:(A,B)=>document.getElementById("loss").innerHTML=
                         "Loss: "+B.loss+"<br>accuricy: "+B.acc+"<br>Epochs Left: "+all}
                     }).then(()=>{if(varDataset)remakeDataset(a);fit(a,all);})
