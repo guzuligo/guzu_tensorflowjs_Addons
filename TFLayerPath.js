@@ -34,6 +34,12 @@ window._guzuTF.TFLayerPath=class TFLayerPath{
     this.add(index_,layer_,this._lastIndex);
     return this;
   }
+
+  //set lastINdex
+  from(index_){
+    if(index_)this._lastIndex=index_;
+    return this;
+  }
   
   
   /*
