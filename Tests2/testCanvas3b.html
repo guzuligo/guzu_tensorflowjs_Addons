@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>S Test</title>
+        <title>Sum Test</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src='../google/tensorflow2.7.0.min.js'></script>
@@ -20,11 +20,14 @@
 
 
 
-            p.to("cc3",tf.layers.conv2d({kernelSize:[10,10],strides:[2,2],filters:3,activation:'tanh'}))
-             .to("mx3",tf.layers.sumPooling2d({poolSize:[3,3],strides:[1,1]}));
-            p.to("cc3b",tf.layers.conv2d({kernelSize:[2,2],strides:[1,1],filters:8,activation:'tanh'}))
-             .to("mx3b",tf.layers.sumPooling2d({poolSize:[2,2],strides:[1,1]}));
-            p.to("cc32",tf.layers.conv2d({kernelSize:[2,2],strides:[1,1],filters:16,activation:'tanh'}));
+            p.to("cc3",tf.layers.conv2d({kernelSize:[8,8],strides:[1,1],filters:3,activation:'relu6'}))
+             .to("mx3",tf.layers.maxPooling2d({poolSize:[4,4],strides:[1,1]}))
+             .to("mxb",tf.layers.sumPooling2d({poolSize:[3,3],strides:[3,3]}))
+            
+             p.to("cc2",tf.layers.conv2d({kernelSize:[2,2],strides:[1,1],filters:8,activation:'relu6'}))
+             .to("mx2",tf.layers.maxPooling2d({poolSize:[4,4],strides:[1,1]}))
+             .to("mx0",tf.layers.sumPooling2d({poolSize:[3,3],strides:[3,3]}))
+            
             //p.to("ct32",tf.layers.counter({units:4,range:[-1,1],type:-1}))
              //
             //p.to("ccc0",tf.layers.cropping2D({cropping:[2,2,2,2]}));
@@ -56,7 +59,8 @@
 
 
             p.to("f",tf.layers.flatten());
-            p.to("ready",tf.layers.dense({units:10,activation:'linear'}));
+            p.to("ready",tf.layers.dense({units:5,activation:'linear'}));
+            p.to("ready2",tf.layers.dense({units:10,activation:'linear'}));
             p.to("out",tf.layers.dense({units:10,activation:'softmax'}));
             //p.to("cn",tf.layers.counter({units:10,range:[-.5,.5],slope:20,useSum:!false,type:1,weight:100}))
             
