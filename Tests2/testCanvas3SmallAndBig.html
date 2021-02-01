@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>S Test</title>
+        <title>Small and Big Test</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src='../google/tensorflow2.7.0.min.js'></script>
@@ -20,20 +20,33 @@
 
 
 
-            p.to("cc3",tf.layers.conv2d({kernelSize:[10,10],strides:[2,2],filters:3,activation:'tanh'}))
-             .to("mx3",tf.layers.sumPooling2d({poolSize:[3,3],strides:[1,1]}));
-            p.to("cc3b",tf.layers.conv2d({kernelSize:[2,2],strides:[1,1],filters:8,activation:'tanh'}))
-             .to("mx3b",tf.layers.sumPooling2d({poolSize:[2,2],strides:[1,1]}));
-            p.to("cc32",tf.layers.conv2d({kernelSize:[2,2],strides:[1,1],filters:16,activation:'tanh'}));
-            //p.to("ct32",tf.layers.counter({units:4,range:[-1,1],type:-1}))
-             //
+            p.to("cc3",tf.layers.conv2d({kernelSize:[2,2],strides:[2,2],filters:1,activation:'linear'}))
+             .to("mx3",tf.layers.maxPooling2d({poolSize:[3,3],strides:[1,1]}));
             //p.to("ccc0",tf.layers.cropping2D({cropping:[2,2,2,2]}));
 
             //p.add("con",tf.layers.concatenate({axis:-3}).apply([  p.apply(["mx3"]),p.apply(["mx3b"])  ]));
             
-            //p.to("cc2",tf.layers.conv2d({kernelSize:[2,2],strides:[1,1],filters:3,activation:'linear'}));
-            //p.to("cnt",tf.layers.counter({units:5,range:[-1,1],type:-1}));
-            //p.to("softmax",tf.layers.softmax());
+            p.to("cc2",tf.layers.conv2d({kernelSize:[2,2],strides:[1,1],filters:3,activation:'linear'}));
+            p.to("mx2",tf.layers.maxPooling2d({poolSize:[2,2],strides:[1,1]}));
+            p.to("cc1",tf.layers.conv2d({kernelSize:[2,2],strides:[1,1],filters:9,activation:'linear'}));
+            p.to("mx1",tf.layers.maxPooling2d({poolSize:[4,4],strides:[2,2]}));
+            p.to("fl1",tf.layers.flatten());
+            p.to("re1",tf.layers.dense({units:10,activation:'linear'}));
+
+            p.to("out1",tf.layers.dense({units:10,activation:'relu'}));
+
+            p.from("in").to("avg",tf.layers.averagePooling2d({poolSize:[2,2],strides:[2,2]}))
+            p.to("cc3b",p.get("cc3"))
+            .to("mx3b",p.get("mx3"))
+            .to("cc2b",p.get("cc2"))    .to("mx2b",p.get("mx2"))
+            .to("cc1b",p.get("cc1"))    .to("mx1b",p.get("mx1"))
+            .to("fl1b",tf.layers.flatten({name:"cocohahaflatten"}));
+            p.to("re1b",tf.layers.dense({units:10,activation:'linear'}));
+            p.to("out1b",tf.layers.dense({units:10,activation:'relu'}));
+
+
+            p.add("co",tf.layers.maximum(),["out1b","out1"]);
+            p.to("softmax",tf.layers.softmax());
             //p.from("mx3");
             //p.to("re2",tf.layers.reshape({targetShape:[9*2,9]}));
             //p.to("la",tf.layers.simpleRNN({units:8,returnSequences: true,activation:'tanh'}));
@@ -55,9 +68,9 @@
             //p.to("mx2",tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}));
 
 
-            p.to("f",tf.layers.flatten());
-            p.to("ready",tf.layers.dense({units:10,activation:'linear'}));
-            p.to("out",tf.layers.dense({units:10,activation:'softmax'}));
+            //p.to("f",tf.layers.flatten());
+            //p.to("ready",tf.layers.dense({units:10,activation:'linear'}));
+            //p.to("out",tf.layers.dense({units:10,activation:'softmax'}));
             //p.to("cn",tf.layers.counter({units:10,range:[-.5,.5],slope:20,useSum:!false,type:1,weight:100}))
             
             //p.to("act",tf.layers.softmax({axis:-1}));
