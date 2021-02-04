@@ -41,7 +41,9 @@
 
             p.add("in",tf.input({shape:[4]}));
             //p.add("f",tf.layers.flatten())
-            p.to("d",tf.layers.dense({units:4/*,kernelInitializer:'identity',biasInitializer:'zeros'*/}))
+            //p.to("d",tf.layers.dense({units:4/*,kernelInitializer:'identity',biasInitializer:'zeros'*/}))
+            p.to("d1",tf.layers.dense({units:1}))
+            p.to("d2",tf.layers.dense({units:4,activation:'sigmoid'}))
             p.to("draw",drawBox);
             
             //p.to("re",tf.layers.reshape({targetShape:[48*48]}));
@@ -111,9 +113,13 @@
             function train(){
                 var n=document.getElementById('ep').value;
                 n=n||100;
-                fit([.1,.8,.1,.8],
+                fit([.3,.8,.3,.8],
                     Number(n)
                 )
+            }
+
+            function drawR(){
+                predict([.3,.8,.3,.8],m2);
             }
         </script>
     <body onload="onload()"><center><table><tr><td>
