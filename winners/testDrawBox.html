@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Draw a box using fit</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src='../google/tensorflow2.7.0.min.js'></script>
+        <script src='../TFLayerPath.js'></script>
+        <script src='../GuzuTFPlugins.js'></script>
+        <script src="../GuzuDataTools.js"></script>
+        <script src="../layerFixedConv2d.js"></script>
+        <script src="../optX2.js"></script>
+        <script>
+
+            var drawBox=tf.layers.temp({
+                computeOutputShape:function(inputShape,__){
+                    return [inputShape[0],28,28,1];
+                },
+                call:function(it,kw,__){
+                    //console.log(it)
+                    it=it.mul(28);
+                    const g=tf.range(0,28).expandDims();
+                    var y=g.clone().transpose();var x=g.clone();
+                    x=x.expandDims(0).tile([it.shape[0],1,1])
+                    y=y.expandDims(0).tile([it.shape[0],1,1]);
+                    var tmp;
+                    var sp=it.split(4,-1);
+                    //sp[0].print();sp[1].print();
+                    tmp=x.sub(sp[0].add(1)).sigmoid();
+                    x=x.sub(sp[1]).mul(-1).sigmoid().mul(tmp);
+                    tmp=y.sub(sp[2].add(1)).sigmoid();
+                    y=y.sub(sp[3]).mul(-1).sigmoid().mul(tmp);
+                    tmp=y.mul(x).expandDims(-1);
+                    //x=x.tile([28,1]);
+                    //y=y.transpose().tile([1,28]);
+                    //console.log(x.shape,y.shape)
+                    //tmp=x.mul(y);//x.expandDims(-2).tile([1,28]).mul(y);
+                    //console.log(tmp.dataSync())
+                    //console.log(x.shape,y.shape,it.shape,tmp.shape)
+                    return tmp.mul(255);//.expandDims(-1);
+
+
+                }
+            });
+
+            //model maker
+            var p=tf.util.path();
+            //p.add("in",tf.input({shape:[48,48,1]}));
+
+            p.add("in",tf.input({shape:[4]}));
+            //p.add("f",tf.layers.flatten())
+            //p.to("d",tf.layers.dense({units:4/*,kernelInitializer:'identity',biasInitializer:'zeros'*/}))
+            p.to("d1",tf.layers.dense({units:10}))
+            p.to("d2",tf.layers.dense({units:4,activation:'sigmoid'}))
+            p.to("draw",drawBox);
+            
+            //p.to("re",tf.layers.reshape({targetShape:[48*48]}));
+            //p.to("b",tf.layers.avgPool2d({poolSize:[2,2],strides:[2,2]}));
+            //p.to("av",tf.layers.avgPooling2d({poolSize:[2,2],strides:[2,2]}));
+
+            var m=p.Model(null,null,{loss: tf.losses.huberLoss });
+
+            var p2=tf.util.path();
+            p2.add("in",p.get("in"));
+            p2.to("draw",p.get("draw"));
+            var m2=p2.Model();
+
+            //m.loss='softmaxCrossEntropy';
+        </script>
+        <script>
+
+            var c,cx;
+            function onload(){
+                c=document.getElementById("c");//new OffscreenCanvas(256, 256);
+                cx=c.getContext('2d');
+                cx.textAlign="center";
+                cx.textBaseline="middle";
+            }
+        
+            function predict(tens,M,c="c2"){
+                //m.predict()
+                M=M||m;
+                tf.tidy(()=>{
+                    var s;
+                    //s=tf.browser.fromPixels(document.getElementById("c"),4).split(4,-1)[3];
+                    //s.max().print();
+                    s=M.predict(tf.tensor([tens])).reshape([28,28,1]);
+                    //s=s.reshape([48,48,1]);//.add(255)
+                    tf.browser.toPixels(s.mul(1/255),document.getElementById(c));
+                });
+
+            }
+
+            var o=new optX2(m,{searchSize:50});
+            function fit(val,eps=1000,useO=false){
+                //tf.tidy(()=>{
+                    var tt=tf.tensor([val]);
+                    predict(val,m2,'c');
+                    (useO?o:m).fit(tt,m2.predict(tt),//.expandDims(0).expandDims(-1),
+                    {epochs:eps,callbacks:{
+                        onTrainEnd:()=>{
+                            console.log("done");
+                            tt.dispose();
+                        },
+                        onEpochEnd:(e,B)=>{//console.log(e)
+                            if(e%5==0)predict(val);
+                            document.getElementById("loss").innerHTML=
+                            "Loss: "+B.loss+"<br>accuricy: "+B.acc;
+                        }
+                    } 
+                    });
+                //});
+            }
+
+            function getCanvasTensor(){
+                return tf.tidy(()=>{
+                    var a=cx.getImageData(0,0,48,48);
+                    a=Array.from(a.data);
+                    a=tf.tensor(a,[1,48,48,4]);
+                    a=tf.guzu.removeChannels(a,[0,1,2]);
+                    return a.mul(1/255);
+                });
+            };
+
+            function train(){
+                var n=document.getElementById('ep').value;
+                n=n||100;
+                fit([.3,.8,.3,.8],
+                    Number(n)
+                )
+            }
+
+            function drawR(){
+                predict([.3,.8,.3,.8],m2);
+            }
+        </script>
+    <body onload="onload()"><center><table><tr><td>
+        <canvas id="c" width=48 height=48></canvas><canvas id="c2" width=48 height=48></canvas><br>
+        <b id="loss">LOSS</b><br>
+        <button onclick="train()">Train</button> on <input id="ep" value=1000 size=5 />Epochs
+        <h2>Testing</h2>
+        <button onclick="drawR();">Draw</button> random <input id="n" value="5" size=1/><br>
+        Drawing [<b id="d0">?</b>], Neural Network sees [<b id="d1">?</b>]<br>
+        <sub><br><br>
+        </td></tr> </table></center>
+        <font color="gray">
+        <h3>About</h3>
+        
+        </sub>
+    </font>
+    </body>
+</html>
