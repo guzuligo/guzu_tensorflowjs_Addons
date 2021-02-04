@@ -1,4 +1,4 @@
-//ver 1.4
+//ver 1.5 TemporaryLayer modified
 if(!window._guzuTF)window._guzuTF={};
 window._guzuTF.AddCoords=class AddCoords extends tf.layers.Layer {
     //Idea from Uber
@@ -472,15 +472,22 @@ window._guzuTF.TemporaryLayer=class TemporaryLayer extends tf.layers.Layer {
       args=args||{};
       super(args);
       this.__={};
+      this.__.this=this;
       for (var i in args){
         this.__[i]=args[i];
       }
+      
     
   }
   
+  build(){
+    if(this.__.build)
+       this.__.build(this.__);
+  }
+
   computeOutputShape(inputShape) {
     if(this.__.computeOutputShape)
-      return this.__.computeOutputShape(inputShape);
+      return this.__.computeOutputShape(inputShape,this.__);
     else 
       return inputShape;
   }
