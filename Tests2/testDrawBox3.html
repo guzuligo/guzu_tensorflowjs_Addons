@@ -24,20 +24,36 @@
                     x=x.expandDims(0).tile([it.shape[0],1,1])
                     y=y.expandDims(0).tile([it.shape[0],1,1]);
                     var tmp;
-                    var sp=it.split(4,-1);
+                    //it.print();console.log(it.shape);
+                    var sp=it.split(8,-1);
                     //sp[0].print();sp[1].print();
+
                     tmp=x.sub(sp[0].add(1)).sigmoid();
                     x=x.sub(sp[1]).mul(-1).sigmoid().mul(tmp);
                     tmp=y.sub(sp[2].add(1)).sigmoid();
                     y=y.sub(sp[3]).mul(-1).sigmoid().mul(tmp);
                     tmp=y.mul(x).expandDims(-1);
+
+                    var t1=tmp;
+
+                    y=g.clone().transpose();x=g.clone();
+                    x=x.expandDims(0).tile([it.shape[0],1,1])
+                    y=y.expandDims(0).tile([it.shape[0],1,1]);
+                    tmp=x.sub(sp[4].add(1)).sigmoid();
+                    x=x.sub(sp[5]).mul(-1).sigmoid().mul(tmp);
+                    tmp=y.sub(sp[6].add(1)).sigmoid();
+                    y=y.sub(sp[7]).mul(-1).sigmoid().mul(tmp);
+                    tmp=y.mul(x).expandDims(-1);
+
+                    var t2=tmp;
+
                     //x=x.tile([28,1]);
                     //y=y.transpose().tile([1,28]);
                     //console.log(x.shape,y.shape)
                     //tmp=x.mul(y);//x.expandDims(-2).tile([1,28]).mul(y);
                     //console.log(tmp.dataSync())
                     //console.log(x.shape,y.shape,it.shape,tmp.shape)
-                    return tmp.mul(255);//.expandDims(-1);
+                    return tf.maximum(t1,t2).mul(255);//.expandDims(-1);
 
 
                 }
@@ -47,18 +63,21 @@
             var p=tf.util.path();
             //p.add("in",tf.input({shape:[48,48,1]}));
 
-            p.add("in",tf.input({shape:[4]}));
+            p.add("in",tf.input({shape:[8]}));
             //p.add("f",tf.layers.flatten())
             //p.to("d",tf.layers.dense({units:4/*,kernelInitializer:'identity',biasInitializer:'zeros'*/}))
-            p.to("d1",tf.layers.dense({units:10}))
-            p.to("d2",tf.layers.dense({units:4,activation:'sigmoid'}))
+            p.to("d1",tf.layers.dense({units:8}));
+            //p.to("d12",tf.layers.dense({units:2}));
+            p.to("do",tf.layers.dropout({rate:0.002}));
+            p.to("d2",tf.layers.dense({units:8,activation:'sigmoid'}))
+            //p.to("do2",tf.layers.dropout({rate:0.02}));
             p.to("draw",drawBox);
             
             //p.to("re",tf.layers.reshape({targetShape:[48*48]}));
             //p.to("b",tf.layers.avgPool2d({poolSize:[2,2],strides:[2,2]}));
             //p.to("av",tf.layers.avgPooling2d({poolSize:[2,2],strides:[2,2]}));
 
-            var m=p.Model(null,null,{loss: tf.losses.huberLoss });
+            var m=p.Model();//null,null,{loss: tf.losses.huberLoss });
 
             var p2=tf.util.path();
             p2.add("in",p.get("in"));
@@ -125,13 +144,13 @@
             function train(){
                 var n=document.getElementById('ep').value;
                 n=n||100;
-                fit([.3,.8,.3,.8],
+                fit([.1,.4,.1,.4,0.5,0.9,0.4,0.9],
                     Number(n)
                 )
             }
 
             function drawR(){
-                predict([.3,.8,.3,.8],m2);
+                predict([.1,.4,.1,.4,0.5,0.9,0.4,0.9],m2);
             }
         </script>
     <body onload="onload()"><center><table><tr><td>
