@@ -68,7 +68,7 @@
             //p.to("d",tf.layers.dense({units:4/*,kernelInitializer:'identity',biasInitializer:'zeros'*/}))
             p.to("d1",tf.layers.dense({units:8}));
             //p.to("d12",tf.layers.dense({units:2}));
-            p.to("do",tf.layers.dropout({rate:0.002}));
+            p.to("do",tf.layers.dropout({rate:0.2}));
             p.to("d2",tf.layers.dense({units:8,activation:'sigmoid'}))
             //p.to("do2",tf.layers.dropout({rate:0.02}));
             p.to("draw",drawBox);

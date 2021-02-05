@@ -13,6 +13,9 @@
         <script>
 
             var drawBox=tf.layers.temp({
+                build:function(__){
+                    __.err=0.5
+                },
                 computeOutputShape:function(inputShape,__){
                     return [inputShape[0],28,28,1];
                 },
@@ -27,11 +30,11 @@
                     //it.print();console.log(it.shape);
                     var sp=it.split(8,-1);
                     //sp[0].print();sp[1].print();
-
-                    tmp=x.sub(sp[0].add(1)).sigmoid();
-                    x=x.sub(sp[1]).mul(-1).sigmoid().mul(tmp);
-                    tmp=y.sub(sp[2].add(1)).sigmoid();
-                    y=y.sub(sp[3]).mul(-1).sigmoid().mul(tmp);
+                    var p=__.err;//||0.8;
+                    tmp=x.sub(sp[0].add(1)).mul(p).sigmoid();
+                    x=x.sub(sp[1]).mul(-1). mul(p).sigmoid().mul(tmp);
+                    tmp=y.sub(sp[2].add(1)).mul(p).sigmoid();
+                    y=y.sub(sp[3]).mul(-1). mul(p).sigmoid().mul(tmp);
                     tmp=y.mul(x).expandDims(-1);
 
                     var t1=tmp;
@@ -39,20 +42,14 @@
                     y=g.clone().transpose();x=g.clone();
                     x=x.expandDims(0).tile([it.shape[0],1,1])
                     y=y.expandDims(0).tile([it.shape[0],1,1]);
-                    tmp=x.sub(sp[4].add(1)).sigmoid();
-                    x=x.sub(sp[5]).mul(-1).sigmoid().mul(tmp);
-                    tmp=y.sub(sp[6].add(1)).sigmoid();
-                    y=y.sub(sp[7]).mul(-1).sigmoid().mul(tmp);
+                    tmp=x.sub(sp[4].add(1)).mul(p).sigmoid();
+                    x=x.sub(sp[5]).mul(-1). mul(p).sigmoid().mul(tmp);
+                    tmp=y.sub(sp[6].add(1)).mul(p).sigmoid();
+                    y=y.sub(sp[7]).mul(-1). mul(p).sigmoid().mul(tmp);
                     tmp=y.mul(x).expandDims(-1);
 
                     var t2=tmp;
 
-                    //x=x.tile([28,1]);
-                    //y=y.transpose().tile([1,28]);
-                    //console.log(x.shape,y.shape)
-                    //tmp=x.mul(y);//x.expandDims(-2).tile([1,28]).mul(y);
-                    //console.log(tmp.dataSync())
-                    //console.log(x.shape,y.shape,it.shape,tmp.shape)
                     return tf.maximum(t1,t2).mul(255);//.expandDims(-1);
 
 
@@ -66,9 +63,10 @@
             p.add("in",tf.input({shape:[8]}));
             //p.add("f",tf.layers.flatten())
             //p.to("d",tf.layers.dense({units:4/*,kernelInitializer:'identity',biasInitializer:'zeros'*/}))
-            p.to("d1",tf.layers.dense({units:8}));
-            //p.to("d12",tf.layers.dense({units:2}));
-            p.to("do",tf.layers.dropout({rate:0.002}));
+            p.to("d1",tf.layers.dense({units:100}));
+            //p.to("do1",tf.layers.dropout({rate:0.1}));
+            p.to("d12",tf.layers.dense({units:2}));
+            //p.to("do2",tf.layers.dropout({rate:0.9}));
             p.to("d2",tf.layers.dense({units:8,activation:'sigmoid'}))
             //p.to("do2",tf.layers.dropout({rate:0.02}));
             p.to("draw",drawBox);
@@ -76,8 +74,8 @@
             //p.to("re",tf.layers.reshape({targetShape:[48*48]}));
             //p.to("b",tf.layers.avgPool2d({poolSize:[2,2],strides:[2,2]}));
             //p.to("av",tf.layers.avgPooling2d({poolSize:[2,2],strides:[2,2]}));
-
-            var m=p.Model();//null,null,{loss: tf.losses.huberLoss });
+            var u;
+            var m=p.Model(u,u,{optimizer:tf.train.momentum(0.000003,0.09)});//,loss: tf.losses.huberLoss});
 
             var p2=tf.util.path();
             p2.add("in",p.get("in"));
@@ -123,7 +121,7 @@
                         },
                         onEpochEnd:(e,B)=>{//console.log(e)
                             if(e%5==0)predict(val);
-                            document.getElementById("loss").innerHTML=
+                            document.getElementById("loss").value=
                             "Loss: "+B.loss+"<br>accuricy: "+B.acc;
                         }
                     } 
@@ -144,22 +142,61 @@
             function train(){
                 var n=document.getElementById('ep').value;
                 n=n||100;
-                fit([.1,.4,.1,.4,0.5,0.9,0.4,0.9],
+                fit(myN(),
                     Number(n)
                 )
             }
 
             function drawR(){
-                predict([.1,.4,.1,.4,0.5,0.9,0.4,0.9],m2);
+                predict(myN(),m2,'c');
             }
+
+            function test(n){
+                return [
+                [.1,.7,.1,.7 , .3,.9,.3,.9],
+                [.1,.4,.1,.9 , .6,.9,.1,.9],
+                [.1,.9,.1,.4 , .1,.9,.5,.9],
+                ][n];
+            }
+
+            function error(val){
+                p.get('draw').__.err=val;
+            }
+
+            function _(v){
+                return document.getElementById(v);
+            }
+
+            function myN(){
+                var r=Number(_('n').value);
+                
+                return test(isNaN(r)?1:r);
+                //return test(Number(_('n').value));
+            }
+            function myE(){
+                var r=Number(_('err').value);
+                return isNaN(r)?1:r;
+            }
+
+            function setErr(){
+                error(myE()||1);
+            }
+
+            function stop(){
+                m.stopTraining=true;
+            }
+
+
+
         </script>
     <body onload="onload()"><center><table><tr><td>
         <canvas id="c" width=48 height=48></canvas><canvas id="c2" width=48 height=48></canvas><br>
-        <b id="loss">LOSS</b><br>
+        <input enabled=false size=10 id="loss">LOSS</b><br>
         <button onclick="train()">Train</button> on <input id="ep" value=1000 size=5 />Epochs
+        <br><button onclick="stop()">STOP</button> 
         <h2>Testing</h2>
-        <button onclick="drawR();">Draw</button> random <input id="n" value="5" size=1/><br>
-        Drawing [<b id="d0">?</b>], Neural Network sees [<b id="d1">?</b>]<br>
+        <button onclick="drawR();">Draw</button> source <input id="n" value="1" size=1/><br>
+        <button onclick="setErr();">Set Error</button>  <input id="err" value="1" size=1/><br>
         <sub><br><br>
         </td></tr> </table></center>
         <font color="gray">
