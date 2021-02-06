@@ -14,7 +14,7 @@
 
             var drawBox=tf.layers.temp({
                 build:function(__){
-                    __.err=0.5
+                    __.err=1;//0.5
                 },
                 computeOutputShape:function(inputShape,__){
                     return [inputShape[0],28,28,1];
@@ -63,9 +63,9 @@
             p.add("in",tf.input({shape:[8]}));
             //p.add("f",tf.layers.flatten())
             //p.to("d",tf.layers.dense({units:4/*,kernelInitializer:'identity',biasInitializer:'zeros'*/}))
-            p.to("d1",tf.layers.dense({units:100}));
+            //p.to("d1",tf.layers.dense({units:100}));
             //p.to("do1",tf.layers.dropout({rate:0.1}));
-            p.to("d12",tf.layers.dense({units:2}));
+            p.to("d12",tf.layers.dense({units:1}));
             //p.to("do2",tf.layers.dropout({rate:0.9}));
             p.to("d2",tf.layers.dense({units:8,activation:'sigmoid'}))
             //p.to("do2",tf.layers.dropout({rate:0.02}));
