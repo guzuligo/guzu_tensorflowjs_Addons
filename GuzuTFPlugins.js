@@ -604,6 +604,59 @@ r=r.concat(c,-1-d).sub(1).print();//r.sub(1).mul(ss).print();
 tf.serialization.registerClass(window._guzuTF.BoundingBoxLayer);  // Needed for serialization.
 
 
+
+
+
+///newlayer
+window._guzuTF.Weight1DLayer=class Weight1DLayer extends tf.layers.Layer {
+  static get className() {
+        return 'Weight1DLayer';
+  }
+  constructor(args) {
+    //args={normalize:bool,threshold:Number,useThreshold:bool}
+    args=args||{};//normalize:false,threshold:0,useThreshold:false};
+    super(args);
+    this.biasUnits=args.biasUnits||0;
+  }
+  computeOutputShape(inputShape) {
+
+    var a=inputShape[0];
+    var b=inputShape[1];
+    var c=[a[0],b[1]/(a[1]+this.biasUnits)];
+    //console.log(c);
+    return c;
+  }
+  call(it, kwargs){ 
+    var a=it[0];//Array.isArray(it)?it[0]:it;
+    var b=it[1];
+    console.log("bu:"+this.biasUnits)
+    if(this.biasUnits>0){
+      var o=tf.ones([a.shape[0],this.biasUnits]);o.print();//adding bias
+      a=tf.concat([a,o],1);
+    }
+
+
+    var targetShape=[a.shape[0],a.shape[1],b.shape[1]/a.shape[1]];
+    //console.log("target Shape:",targetShape,"oldShape:",b.shape,"a shape:",a.shape)
+    b=b.reshape(targetShape);
+    a=a.expandDims(-1);
+    
+    a=a.mul(b).sum(-2);
+
+    //console.log(a.shape);
+    return a;
+  }
+}
+
+tf.serialization.registerClass(window._guzuTF.Weight1DLayer);  // Needed for serialization.
+///newlayer
+
+
+
+
+
+
+
 //args:{index:[numbers]}
 //returns input with channels removed
 //TODO: full testing
@@ -789,7 +842,7 @@ tf.layers.mutate2d=(args)=>{return new window._guzuTF.Mutation2d(args);};
 tf.layers.temp=(args)=>{return new window._guzuTF.TemporaryLayer(args);};
 tf.layers.bbox=(args)=>{return new window._guzuTF.BoundingBoxLayer(args);};
 tf.layers.dropChannels=(args)=>{return new window._guzuTF.DropChannelsLayer(args);};
-
+tf.layers.weight1d=(args)=>{return new window._guzuTF.Weight1DLayer(args);};
 
 //some needs fixing
 tf.layers.sub=window._guzuTF.guzuTfTools.sub;
