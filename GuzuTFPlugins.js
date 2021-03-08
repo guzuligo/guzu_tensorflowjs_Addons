@@ -607,7 +607,9 @@ tf.serialization.registerClass(window._guzuTF.BoundingBoxLayer);  // Needed for 
 
 
 
-///newlayer
+///tf.layers.weight1d
+//apply([inputLayer,weightSourceLayer])
+//args:{biasUnits:number of bias units to add}
 window._guzuTF.Weight1DLayer=class Weight1DLayer extends tf.layers.Layer {
   static get className() {
         return 'Weight1DLayer';
@@ -629,9 +631,9 @@ window._guzuTF.Weight1DLayer=class Weight1DLayer extends tf.layers.Layer {
   call(it, kwargs){ 
     var a=it[0];//Array.isArray(it)?it[0]:it;
     var b=it[1];
-    console.log("bu:"+this.biasUnits)
+    //console.log("bu:"+this.biasUnits)
     if(this.biasUnits>0){
-      var o=tf.ones([a.shape[0],this.biasUnits]);o.print();//adding bias
+      var o=tf.ones([a.shape[0],this.biasUnits]);//o.print();//adding bias
       a=tf.concat([a,o],1);
     }
 
