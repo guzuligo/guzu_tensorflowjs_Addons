@@ -1,6 +1,6 @@
 <head>
 <script>
-    var colorDistanceMethod=2;//0,1,2
+    var colorDistanceMethod=0;//0,1,2
     msxColors=[
         [0,0,0],[1,1,1],
         [62,184,73],[116,208,125],//green
@@ -36,6 +36,7 @@
             else
                 {s=!s;c[++j]=0;i--;}
         }
+        if (c.length>1 && c.length%2==1)c.pop();
         return c;
     }
 
@@ -60,8 +61,9 @@
     function arraysToMSX(a,vals,w=128,h=128,max=0){
         var result="";
         document.getElementById("code").innerHTML="5000 'size:"+(w*h)+"*"+(vals.length-1)+" Max is 32725*"+"<br>"+
-        "10 h="+w+":w="+h+":q="+vals.length+":m="+max+"<br>";
+        "10 h="+w+":w="+h+":q="+(vals.length-1)+":m="+max+"<br>";
         var i=-1;var n=1001;while(++i<a.length){
+            if(a[i].length<2)continue;
             result+=(i+n)+" DATA "+a[i].length+","+vals[i]+"<br>"
             var A=a[i];
             while(A.length>0){
