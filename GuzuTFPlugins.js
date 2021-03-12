@@ -651,7 +651,8 @@ window._guzuTF.Weight1DLayer=class Weight1DLayer extends tf.layers.Layer {
 }
 
 tf.serialization.registerClass(window._guzuTF.Weight1DLayer);  // Needed for serialization.
-///newlayer
+
+
 
 
 
@@ -845,6 +846,7 @@ tf.layers.temp=(args)=>{return new window._guzuTF.TemporaryLayer(args);};
 tf.layers.bbox=(args)=>{return new window._guzuTF.BoundingBoxLayer(args);};
 tf.layers.dropChannels=(args)=>{return new window._guzuTF.DropChannelsLayer(args);};
 tf.layers.weight1d=(args)=>{return new window._guzuTF.Weight1DLayer(args);};
+//tf.layers.weightConv2d=(args)=>{return new window._guzuTF.WeightConv2DLayer(args);};
 
 //some needs fixing
 tf.layers.sub=window._guzuTF.guzuTfTools.sub;
