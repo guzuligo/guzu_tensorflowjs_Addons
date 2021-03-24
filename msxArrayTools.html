@@ -27,7 +27,10 @@
         var i=-1;
         var j=0;
         var s=false;var p;
-        if (l>32725)l=32725;//avoid overflow
+        if (l>32725){
+            l=32725;
+            errors.overflow=true;
+        }//avoid overflow
         while(++i<l){
             p=a[Math.floor(i/a[0].length)][i%a[0].length]
             
@@ -60,38 +63,99 @@
 
     function arraysToMSX(a,vals,w=128,h=128,max=0){
         var result="";
-        document.getElementById("code").innerHTML="5000 'size:"+(w*h)+"*"+(vals.length-1)+" Max is 32725*"+"<br>"+
-        "10 h="+w+":w="+h+":q="+(vals.length-1)+":m="+max+"<br>";
-        var i=-1;var n=1001;while(++i<a.length){
+        code.config="5000 'size:"+(w*h)+"*"+(vals.length-1)+" Max is 32725*"+"\r"+
+        "10 h="+w+":w="+h+":q="+(vals.length-1)+":m="+max+"\r";
+        var i=-1;var n=101;while(++i<a.length){
             if(a[i].length<2)continue;
-            result+=(i+n)+" DATA "+a[i].length+","+vals[i]+"<br>"
+            result+=(i+n)+" DATA "+a[i].length+","+vals[i]+"\r"
             var A=a[i];
             while(A.length>0){
                 n++;
-                result+=(i+n)+" DATA "+A.splice(0,30).toString()+"<br>";
+                result+=(i+n)+" DATA "+A.splice(0,36).toString()+"\r";
             }
             n++;
             //a[i].toString()+"<br>";
         }
-        document.getElementById("data").innerHTML=result;
+        code.data=result;
         return result;
     }
 
+    function download(){
+        var file = new File([code.config+code.recolor+code.decoder+code.data], "x001msx", {
+            type: "text/plain",
+        });
+        var a=document.getElementById("download");
+        a.href= URL.createObjectURL(file);
+        a.download = "x001msx";
+        if(document.getElementById("autodownload").checked)
+            a.click();
+    }
+
     function loadImage(){
+        code.recolor="";
+        
+        
+
+
         var f=URL.createObjectURL(document.getElementById("file").files[0]);
         
         var img=new Image();
         img.onload=function(){
-            c.width=img.width;
-            c.height=img.height;
-            cx.drawImage(img,0,0,img.width,img.height);
-            var a=readCanvas(0,0,img.width,img.height);
-            var j=dropMax(compileArray(a));
-            max=j[1];a=j[0];
-            arraysToMSX(a[0],a[1],img.width,img.height,max);
+            render(img);
         };
         img.src=f;
+        
     }
+
+    var _img;
+    var errors={}
+    function render(img,W,H){
+        errors={};
+        W=W||(Number(document.getElementById("W").value)/100);
+        H=H||(Number(document.getElementById("H").value)/100);
+
+        
+
+        img=_img=img||_img;
+        var w=Math.ceil(W*img.width),h=Math.ceil(H*img.height);
+        document.getElementById("info").innerHTML=" "+w+"X"+h;
+        c.width=w;
+        c.height=h;
+        cx.imageSmoothingEnabled = false;
+        cx.drawImage(img,0,0,w,h);
+        autoColor(cx.getImageData(0,0,w,h).data);
+        
+        
+        if(document.getElementById("cr").checked){
+            code.recolor="31 ";
+            var i,ii;
+            //copy colors
+            for(i=0;i<16;i++){
+                code.recolor+="color=("+i;
+                for ( ii=0;ii<3;ii++){
+                    msxColors[i][ii]=xhex(i,ii);
+                    code.recolor+=","+Math.round(msxColors[i][ii]/255*7)+(ii<2?"":"):"+(i==8?"\n32 ":"")  );
+                }
+                
+                
+            }
+            code.recolor+="\r";
+        }
+        var a=readCanvas(0,0,w,h);
+        var j=dropMax(compileArray(a));
+        max=j[1];a=j[0];
+        arraysToMSX(a[0],a[1],w,h,max);
+        
+
+        document.getElementById("error").innerHTML="<b><i>";//no errors yet
+        for (var i in errors){
+            document.getElementById("error").innerHTML+=i+"<br>";
+        }
+
+
+        download();
+    }
+
     function dropMax(a){
         var A=a[0];var max=[0,0];
         for (var i=0;i<A.length;i++)
@@ -169,57 +233,118 @@
     };
 
 
+    var code={
+        recolor:"",
+        config:"\r\
+10 w=4:h=4:q=2\r\
+11 data 5,1 ,4,3,5,2,2\r\
+12 data 4,5 ,1,3,4,1\r\
+"
+        ,
+        decoder:"\r\
+15 x=0:y=0:sc=1\r\
+20 l=w*h-1'defint a-z\r\
+30 screen 5'\r\
+40 line (x,y)-(x+(h-1)*sc,y+(w-1)*sc),m,BF'\r\
+50 i=0:j=-1:read s,v'\r\
+60 for j=0 to s-1:read c:k=(j and 1)*v''\r\
+80 if c=0 then goto 90'\r\
+81 if k=0 then i=i+c:goto 90'\r\
+83 w2=i mod w:w1=i/w'\r\
+84 if (c+w2>w) then goto 86'\r\
+85 line(x+sc*w1,y+sc*w2)-(x+sc*w1+sc-1,y+sc*(w2+c-1)),v,bf:i=i+c:goto 90\r\
+86 line(x+sc*w1,y+sc*w2)-(x+sc*w1+sc-1,y+sc*(w-1)),v,bf:c=c-w+w2:i=i+w-w2:if c>0 then goto 83\r\
+90 next: q=q-1:if q>0 then goto 50'\r\
+100 goto 100\r"
+    ,
+    data:""
+    }
+
+    //hex to integer from color
+    function xhex(c_num,index){
+        var aa=document.getElementById("c"+c_num);
+        return parseInt(aa.value.substr(1+index*2,2),16);
+    }
+
+    function autoColor(data){
+        if(!document.getElementById("ca").checked)
+            return;
+        var all=[];
+        var c,d;
+        var ii=15;
+        //console.log(">>"+data.length);
+        for (var i=0;i<data.length;i+=4){
+            c=((
+                Math.round(data[i]/7)*7
+                )*256
+                +
+                Math.round(data[i+1]/7)*7
+                )*256
+                +
+                Math.round(data[i+2]/7)*7
+                ;
+            c="#"+c.toString(16)
+            
+            if(!all.includes(c)){
+                all.push(c);
+                document.getElementById("c"+ii).value=c;
+                console.log(c,data[i],data[i+1],data[i+2]);
+                if(--ii<0)
+                    break;
+            }
+        }
+
+
+    }
 
 </script>
 </head>
 
 <body>
+
     <input type="file" id="file" onchange="loadImage()" />
-    <canvas id="canvas"></canvas>
+    <canvas id="canvas" style="image-rendering: pixelated;"></canvas>
+    <br><a href="#" id="download">DOWNLOAD</a><div id="info"></div><div id="error"></div>
     <br>
-<div id="code">
-    10 w=4:h=4:q=2<br>
-11 data 5,1 ,4,3,5,2,2<br>
-12 data 4,5 ,1,3,4,1<br>
-<br>
-    </div>
-    20 l=w*h-1'defint a-z<br>
-    30 screen 5'<br>
-    40 line (0,0)-(h-1,w-1),m,BF'<br>
-    50 i=0:j=-1:read s,v'<br>
-    60 for j=0 to s-1:read c:k=(j and 1)*v''<br>
-    80 if c=0 then goto 90'<br>
 
-    81 if k=0 then i=i+c:goto 90'<br>
-    83 w2=i mod w:w1=i/w'<br>
-    84 if (c+w2>w) then goto 86'<br>
-    85 line(w1,w2)-(w1,w2+c-1),v:i=i+c:goto 90'<br>
-    86 line(w1,w2)-(w1,w),v:c=c-w+w2:i=i+w-w2:if c>0 then goto 83'<br>
-    90 next: q=q-1:if q>0 then goto 50'<br><br>
-    100 goto 100<br>
-    101 load "msx":run
-<!--
+    <input id="cr" type="checkbox" checked/>Recolor
+    <input id="ca" type="checkbox"/>AutoColor
+    <input id="autodownload" type="checkbox"/>Auto Download
+    <br>
+    <input id="c0" type="color"/><button onclick="render();">Refresh</button><br>
+    <input id="c1" type="color"/>
+    <input id="c2" type="color"/>
+    <input id="c3" type="color"/>
+    <input id="c4" type="color"/>
+    <input id="c5" type="color"/><br>
+    <input id="c6" type="color"/>
+    <input id="c7" type="color"/>
+    <input id="c8" type="color"/>
+    <input id="c9" type="color"/>
+    <input id="c10" type="color"/><br>
+    <input id="c11" type="color"/>
+    <input id="c12" type="color"/>
+    <input id="c13" type="color"/>
+    <input id="c14" type="color"/>
+    <input id="c15" type="color"/><br>
 
-    20 l=w*h-1'<br>
-    30 screen 5'<br>
-    50 i=0:j=-1:read s,v'<br>
-    60 for j=0 to s-1:read c:k=(j and 1)*v'<br>
-    80 if c=0 then goto 90'<br>
-    81 c=c-1'<br>
-    82 if (j and 1 <>0) then pset(i/w,i mod w),v'<br>
-    83 i=i+1: goto 80'<br>
-    90 next: q=q-1:if q>
+    Width %<input id="W" type="number" value="100"/>
+    Height%<input id="H" type="number" value="100"/>
+    
 
-200 screen 5<br>
-205 for i=0 to l<br>
-210 if i mod w=0 then print "---"<br>
-220 pset(i mod w,i/h),a(i mod w,i/h)<br>
-230 next<br>
-240 goto 240<br>
--->
-<div id="data"></div>
 </body>
 <script>
     var c=document.getElementById("canvas");
         var cx=c.getContext('2d');
+
+    function init0(){
+        for (var i=0;i<=15;i++){
+            var aa=document.getElementById("c"+i);
+            aa.value="#"+
+                        msxColors[i][0].toString(16)+
+                        msxColors[i][1].toString(16)+
+                        msxColors[i][2].toString(16)
+        }
+    }
+    init0();
 </script>
