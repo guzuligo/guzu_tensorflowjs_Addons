@@ -17,18 +17,20 @@
             var p=tf.util.path();
             p.add("in1",tf.input({shape:[1]}));
             p.add("in2",tf.input({shape:[3]}));
-            p.to("in2w",tf.layers.dense({units:2}));
-            p.add("wd",tf.layers.weight1d({biasUnits:1}),["in1","in2w"]);
+            p.to("in2w",tf.layers.dense({units:100}));
+            p.add("wd",tf.layers.weight1d({biasUnits:4}),["in1","in2w"]);
             //p.to("f",tf.layers.flatten())
-            //p.to("dense1",tf.layers.dense({units:1}))
+            p.to("dense1",tf.layers.dense({units:1}))
             //p.to("dense",tf.layers.dense({units:1}))
 
-            var inputs =[tf.tensor([  [4],[8]  ]),  tf.tensor([  [3,10,1],[2,10,2]   ])   ];
-            var outputs=tf.randomNormal([300,1]);//.greater(.8).mul(1);
-            outputs=tf.randomNormal([2,1]);//.greater(.8).mul(1);
-            var M=p.Model(["in1",'in2'],['wd']);
+            var v=20;
+            //var inputs =[tf.tensor([  [4],[8]  ]),  tf.tensor([  [3,10,1],[2,10,2]   ])   ];
+            var inputs=[tf.randomNormal([v,1])  , tf.randomNormal([v,3])]
+            var outputs=tf.randomNormal([v,1]).greater(.7).mul(1);
+            //outputs=tf.randomNormal([2,1]);//.greater(.8).mul(1);
+            var M=p.Model(["in1",'in2']);
             var m=p.Model(["in1","in2"],"wd",{learningRate:0.01});
-
+            //M.fit(inputs,outputs,{epochs:50}).then(()=>M.predict(inputs).sub(outputs).pow(2).max().sqrt(2).print()); 
         </script>
         <body>
            In console, write:<br>m.predict(inputs).print();
