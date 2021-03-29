@@ -81,12 +81,13 @@
     }
 
     function download(){
+        var name_="";
         var file = new File([code.config+code.recolor+code.decoder+code.data], "x001msx", {
             type: "text/plain",
         });
         var a=document.getElementById("download");
         a.href= URL.createObjectURL(file);
-        a.download = "x001msx";
+        a.download = getFileName(true);
         if(document.getElementById("autodownload").checked)
             a.click();
     }
@@ -134,7 +135,7 @@
                 code.recolor+="color=("+i;
                 for ( ii=0;ii<3;ii++){
                     msxColors[i][ii]=xhex(i,ii);
-                    code.recolor+=","+Math.round(msxColors[i][ii]/255*7)+(ii<2?"":"):"+(i==8?"\n32 ":"")  );
+                    code.recolor+=","+Math.round(msxColors[i][ii]/255*7)+(ii<2?"":"):"+(i==8?"\r32 ":"")  );
                 }
                 
                 
@@ -297,6 +298,23 @@
 
     }
 
+    var fCount=-1;
+    function getFileName(countup=false){
+        if(fCount<0)
+            fCount=Number(document.getElementById("fnum").value);
+        var res=""+fCount;
+        while(res.length<document.getElementById("fnum").value.length)
+            res="0"+res;
+        res=document.getElementById("fname").value+res;
+        if(countup)
+            fCount++;
+        var ex=document.getElementById("fext").value;
+        if(ex!="")res+="."+ex;
+        return res;
+    }
+
+    
+
 </script>
 </head>
 
@@ -329,8 +347,10 @@
     <input id="c15" type="color"/><br>
 
     Width %<input id="W" type="number" value="100"/>
-    Height%<input id="H" type="number" value="100"/>
-    
+    Height%<input id="H" type="number" value="100"/><br>
+    File Name:<input id="fname" value="X" size="8" />
+    File Number:<input id="fnum" onchange="fCount=-1;" value="00" size="3" />
+    File Ext:<input id="fext" value="" size="3" />
 
 </body>
 <script>
