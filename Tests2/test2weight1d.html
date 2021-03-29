@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Weight1d debuggning</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <script src='../google/tensorflow2.7.0.min.js'></script>
+        <script src="../google/tfjs-vis@1.4.3.js"> </script>
+
+        <script src='../TFLayerPath.js'></script>
+        <script src='../GuzuTFPlugins.js'></script>
+        <script src="../GuzuDataTools.js"></script>
+        <script src="../layerFixedConv2d.js"></script>
+        <script src="../optX2.js"></script>
+        <script>
+            var p=tf.util.path();
+            p.add("in1",tf.input({shape:[1]}));
+            p.add("in2",tf.input({shape:[3]}));
+            p.to("in2w",tf.layers.dense({units:2}));
+            p.add("wd",tf.layers.weight1d({biasUnits:1}),["in1","in2w"]);
+            //p.to("f",tf.layers.flatten())
+            //p.to("dense1",tf.layers.dense({units:1}))
+            //p.to("dense",tf.layers.dense({units:1}))
+
+            var inputs =[tf.tensor([  [4],[8]  ]),  tf.tensor([  [3,10,1],[2,10,2]   ])   ];
+            var outputs=tf.randomNormal([300,1]);//.greater(.8).mul(1);
+            outputs=tf.randomNormal([2,1]);//.greater(.8).mul(1);
+            var M=p.Model(["in1",'in2'],['wd']);
+            var m=p.Model(["in1","in2"],"wd",{learningRate:0.01});
+
+        </script>
+        <body>
+           In console, write:<br>m.predict(inputs).print();
+        </body>
+    </head>
+</html>
+        
