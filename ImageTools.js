@@ -26,12 +26,21 @@ class ImageTools{
         img.onload=function(){
            if (!X)
                X=[img.width,img.height,0,0];
+            else{
+                var j=X;
+                j[0]=j[0]||(j[1]*img.height/img.width);
+                j[1]=j[1]||(j[0]*img.height/img.width); 
+            }
            canvas.width=X[0]||img.width;
            canvas.height=X[1]||img.height;
            if (!resizeWidthHeight_AsArray)
                c2d.drawImage(img,X[2]||0,X[3]||0);
-           else
-               c2d.drawImage(img,X[2]||0,X[3]||0,resizeWidthHeight_AsArray[0],resizeWidthHeight_AsArray[1]);
+           else{
+               var j=resizeWidthHeight_AsArray;
+               j[0]=j[0]||(j[1]*img.height/img.width);
+               j[1]=j[1]||(j[0]*img.height/img.width);
+               c2d.drawImage(img,X[2]||0,X[3]||0,j[0],j[1]);
+           }
            me.rawdata=me.context.getImageData(0,0,canvas.width,canvas.height);
             if (onload)
                 onload(me);
@@ -87,6 +96,8 @@ class ImageTools{
         return r;
     }
     
+
+
     transpose = m => m[0].map((x,i) => m.map(x => x[i]))
     
 }
