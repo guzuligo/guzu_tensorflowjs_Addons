@@ -16,12 +16,15 @@
             p.to("f",tf.layers.flatten());
             var units;//=3;
             var biases=3;
-            p.add("d1",tf.layers.dense({units:units=16,activation:'sigmoid'}),"f");
+            var l1=tf.regularizers.l1({l1:0.0001});
+            p.add("d1",tf.layers.dense({units:units=24-0,activation:'relu6'}),"f");
 
-            p.add("d2",tf.layers.dense({units:16,activation: 'sigmoid'}),"f");
+            p.add("d2",tf.layers.dense({units:24,activation: 'relu6'}),"f");
+            p.to("d2b",tf.layers.dense({units:24,activation: 'relu6'}));
 
             
-            p.add("d2w",tf.layers.dense({units:48*(biases+units)}),"d2");
+            p.to("d2w",tf.layers.dense({units:(48)*(biases+units),activation: 'linear',
+                  kernelRegularizer:l1,biasRegularizer:l1}));
             p.add("dx",tf.layers.weight1d({biasUnits:biases}),["d1","d2w"]);
             //p.to("act1",tf.layers.activation({activation: 'sigmoid'}))
             /*
@@ -95,7 +98,7 @@
             function drawRandom(v){
                 var r;
                 draw(r=v||Math.floor(Math.random()*10),Math.floor(Math.random()*fonts.length),Math.random()*16-8,
-                Math.random()*20-10,Math.random()*10-5,-20+Math.random()*40)
+                Math.random()*20-10,Math.random()*10-5,10*(-1+Math.random()*2))
                 return r;
             }
 
@@ -192,7 +195,7 @@
             }
 
             function predict(){
-                return tf.tidy(()=>m.predict(getCanvasTensor()).sub(.5).step().dataSync().indexOf(1));
+                return tf.tidy(()=>m.predict(getCanvasTensor()).sub(.8).step().dataSync().indexOf(1));
             }
 
             function check(v){
@@ -215,7 +218,7 @@
     <body onload="onload()"><center><table><tr><td>
         <canvas id="c" width=48 height=48></canvas><canvas id="c2" width=48 height=48></canvas><br>
         <b id="loss">LOSS</b><br>
-        <button onclick="train()">Train</button> on <input id="ep" value=1000 size=5 />Epochs
+        <button onclick="train()">Train</button> on <input id="ep" value=10000 size=5 />Epochs
         <h2>Testing</h2>
         <button onclick="drawR();drawM2();">Draw</button> random <input id="n" value="5" size=1/><br>
         Drawing [<b id="d0">?</b>], Neural Network sees [<b id="d1">?</b>]<br>
