@@ -609,6 +609,7 @@ tf.serialization.registerClass(window._guzuTF.BoundingBoxLayer);  // Needed for 
 
 ///tf.layers.weight1d
 //apply([inputLayer,weightSourceLayer])
+//  Make sure that weightSourceLayer size is a multiple of: inputLayer size + biasUnits arg below
 //args:{biasUnits:number of bias units to add}
 window._guzuTF.Weight1DLayer=class Weight1DLayer extends tf.layers.Layer {
   static get className() {
@@ -619,11 +620,37 @@ window._guzuTF.Weight1DLayer=class Weight1DLayer extends tf.layers.Layer {
     args=args||{};//normalize:false,threshold:0,useThreshold:false};
     super(args);
     this.biasUnits=args.biasUnits||0;
+    this.init=args.init??true;
   }
   computeOutputShape(inputShape) {
 
     var a=inputShape[0];
     var b=inputShape[1];
+
+    //initialize
+    if (this.init)
+      if (b[1]<a[1]){
+        console.error("Weight1DLayer: Input size is larger than the weights.");
+        this.init=false;
+      }
+      else{
+          
+          
+
+          this.init=false;
+          var v=b[1]%(this.biasUnits+a[1]);
+          //console.log("a1:",a[1]," v:",v," b1:",b[1]," bias:"+this.biasUnits)
+          if (v>0){
+
+            var i=0;
+            while(i++<100 && b[1]%(this.biasUnits+a[1])>0)
+              this.biasUnits++;
+            
+            (i<100?console.warn:console.error)("Weight1DLayer: Second layer isn't a multiple of the first."+
+            (i<100?" Increasing bias to "+this.biasUnits+" to compensate.":""));
+          }
+      }
+
     var c=[a[0],b[1]/(a[1]+this.biasUnits)];
     //console.log(c);
     return c;
