@@ -13,19 +13,19 @@
             //model maker
             var l1=tf.regularizers.l1({l1:0.0001});
             var kernelSize=2;
-            var filters=3;
+            var filters=16;
             var chans;
             var p=tf.util.path();
             p.add("in",tf.input({shape:[48,48,chans=1]}));
-            p.to("c01",tf.layers.conv2d({kernelSize:[4,4],strides:[4,4],filters:3}))
-            p.to("p01",tf.layers.maxPooling2d({poolSize:[4,4]}))
+            p.to("c01",tf.layers.conv2d({kernelSize:[4,4],strides:[4,4],filters:16,activation:'relu6'}))
+            p.to("p01",tf.layers.maxPooling2d({poolSize:[2,2]}))
             p.to("f",tf.layers.flatten());
-            //p.to("d0",tf.layers.dense({units:10,activation:'linear'}));
+            //p.to("d0",tf.layers.dense({units:100,activation:'linear'}));
             p.to("d1",tf.layers.dense({units:kernelSize*kernelSize*chans*filters,activation:'linear'}));
 
 
             p.add("dx",tf.layers.convWeight2d({kernelSize:kernelSize,strides:4,padding:'same'}),["in","d1"]);
-            p.to("p11",tf.layers.maxPooling2d({poolSize:[2,2]}))
+            p.to("p11",tf.layers.maxPooling2d({poolSize:[4,4]}))
             p.to("c12",tf.layers.conv2d({kernelSize:[2,2],filters:3}))
             p.to("p12",tf.layers.maxPooling2d({poolSize:[2,2]}))
             p.to ("ff",tf.layers.flatten());

@@ -755,14 +755,14 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
       
       var targetShape=[ this.kernelSize[0],this.kernelSize[1],a[3]
       ,(b[1]/ (a[3]*this.kernelSize[0]*this.kernelSize[1]))    ];
-      console.log(a,b,this.kernelSize,targetShape);
+      //console.log(a,b,this.kernelSize,targetShape);
       this.outputshape_=tf.conv2d(tf.ones(a.slice(1)),tf.ones(targetShape),this.strides,this.padding).shape;
       
     }
 
     var c=this.outputshape_;
     c=[a[0],c[0],c[1],c[2]];
-    console.log("outputShape:",c);
+    //console.log("outputShape:",c);
     //var c=[a[0],b[1]/(a[1]+this.biasUnits)];
     //console.log(c);
     return  c;
