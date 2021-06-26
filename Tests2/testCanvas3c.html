@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Sum Test</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src='../google/tensorflow2.7.0.min.js'></script>
+        <script src='../TFLayerPath.js'></script>
+        <script src='../GuzuTFPlugins.js'></script>
+        <script src="../GuzuDataTools.js"></script>
+        <script src="../layerFixedConv2d.js"></script>
+        <script>
+            //model maker
+            var p=tf.util.path();
+            p.add("in",tf.input({shape:[48,48,1]}));
+            
+            //p.to("re",tf.layers.reshape({targetShape:[48*48]}));
+            //p.to("b",tf.layers.avgPool2d({poolSize:[2,2],strides:[2,2]}));
+            //p.to("av",tf.layers.avgPooling2d({poolSize:[2,2],strides:[2,2]}));
+
+
+
+            p.to("cc3",tf.layers.conv2d({kernelSize:[8,8],strides:[4,4],filters:16,activation:'relu6'}))
+             .to("mx3",tf.layers.maxPooling2d({poolSize:[2,2],strides:[2,2]}))
+             //.to("mxb",tf.layers.sumPooling2d({poolSize:[3,3],strides:[3,3]}))
+            
+             p.to("cc2",tf.layers.conv2d({kernelSize:[2,2],strides:[1,1],filters:16,activation:'relu6'}))
+             .to("mx2",tf.layers.maxPooling2d({poolSize:[4,4],strides:[1,1]}))
+             
+            p.to("f",tf.layers.flatten());
+            //p.to("ready",tf.layers.dense({units:5,activation:'linear'}));
+            //p.to("ready2",tf.layers.dense({units:10,activation:'linear'}));
+            p.to("out",tf.layers.dense({units:10,activation:'softmax'}));
+            //p.to("cn",tf.layers.counter({units:10,range:[-.5,.5],slope:20,useSum:!false,type:1,weight:100}))
+            
+            //p.to("act",tf.layers.softmax({axis:-1}));
+            var m=p.Model();//=p.model(["in"],["in"]);//tf.model({inputs:[p.get("in")],outputs:[p.apply()]});
+            
+
+            p.add("border",tf.layers.effect.border(p.get("in")),"in");
+            var m2=p.Model();
+
+            m.loss='softmaxCrossEntropy';
+        </script>
+        <script>
+
+            var c,cx;
+            function onload(){
+                c=document.getElementById("c");//new OffscreenCanvas(256, 256);
+                cx=c.getContext('2d');
+                cx.textAlign="center";
+                cx.textBaseline="middle";
+            }
+        
+            var fonts=[
+                "sans-serif",//
+                "Monospace",//
+                "Arial",
+                "Times New Roman",
+                "Helvetica",
+                "Courier New",
+                "Verdana",
+                "Arial Narrow",
+                "Candara",
+                "Calibri",
+                "Cambria",
+                "Impact",
+                "Georgia",
+                "Trebuchet MS",
+                "Comic Sans MS"
+            ];
+            function draw(text,fontNumber,sizeoffset=0,xoffset=0,yoffset=0,rotate){
+                cx.font=(sizeoffset+20)+"px "+fonts[fontNumber||0];
+                
+                cx.clearRect(0,0,48,48);
+                
+                cx.translate(24+xoffset,24+yoffset);
+                cx.rotate(rotate*Math.PI/180);
+                cx.fillText(text,0,0);
+                cx.resetTransform();
+            }
+
+            function drawM2(){
+                tf.tidy(()=>{
+                    var s=tf.browser.fromPixels(document.getElementById("c"),4).split(4,-1)[3];
+                    //s.max().print();
+                    s=m2.predict(s.expandDims(0));
+                    s=s.reshape([48,48,1]);//.add(255)
+                    tf.browser.toPixels(s.mul(1/255),document.getElementById("c2"));
+                });
+            }
+
+            function drawRandom(v){
+                var r;
+                draw(r=v||Math.floor(Math.random()*10),Math.floor(Math.random()*fonts.length),Math.random()*16-8,
+                Math.random()*20-10,Math.random()*10-5,10*(-1+Math.random()*2))
+                return r;
+            }
+
+            var t1;
+            //idea to convert imagedata to tensor
+            function test(){
+                var a=cx.getImageData(0,0,48,48).data;
+                t1=tf.tensor(Array.from(a),[48,48,4]);
+                t1=tf.guzu.removeChannels(t1,[0,1,2]);
+                t1.max().print();
+            }
+
+            function makeDataset(size=32){
+                return tf.tidy(()=>{
+                    var inputs=[],outputs=[],a;
+                    for(var i=0;i<size;i++){
+                        outputs.push(drawRandom());
+                        a=cx.getImageData(0,0,48,48).data;
+                        inputs.push(Array.from(a));
+                    }
+                    inputs=tf.tensor(inputs,[size,48,48,4]).mul(1/255);//cuz not using getCanvasTensor
+                    outputs=tf.tensor(outputs,[size]);
+                    inputs=tf.guzu.removeChannels(inputs,[0,1,2]);
+                    return [inputs,tf.oneHot(outputs.cast('int32'),10)];
+                });
+            }
+
+            function getCanvasTensor(){
+                return tf.tidy(()=>{
+                    var a=cx.getImageData(0,0,48,48);
+                    a=Array.from(a.data);
+                    a=tf.tensor(a,[1,48,48,4]);
+                    a=tf.guzu.removeChannels(a,[0,1,2]);
+                    return a.mul(1/255);
+                });
+            };
+
+            function remakeDataset(src,keep){
+                var fromStart=false;
+                if(keep===undefined)
+                    keep=Math.ceil(src[0].shape[0]/2);
+
+                //percentage?
+                if(keep>-1 && keep<1 && keep!=0){
+                    keep=Math.ceil(src[0].shape[0]*keep);
+                }
+
+                if(keep<0){
+                    keep=-keep;
+                    fromStart=true;
+                }
+                //console.log(src[0].shape[0],keep);
+                var r=tf.tidy(()=>{
+                    var s=src.concat();
+                    var j=makeDataset(s[0].shape[0]-keep);
+                    if(keep<1)
+                        return j;
+                    if(fromStart){
+                        s[0]=tf.slice(s[0],keep).concat(j[0]);
+                        s[1]=tf.slice(s[1],keep).concat(j[1]);
+                    }else{
+                        s[0]=j[0].concat(tf.slice(s[0],keep));
+                        s[1]=j[1].concat(tf.slice(s[1],keep));
+                    }
+                    return s;
+                });
+                src[0].dispose();
+                src[1].dispose();
+                src[0]=r[0];src[1]=r[1];
+                return r;
+            }
+            var A;
+            var varDataset=true;
+            var epochs=2;
+            function fit(a=128,all){
+                if(!isNaN(a)){
+                    all=a;
+                    a=A||makeDataset(16);
+                    
+                }
+                else
+                if(!a)
+                    a=A||makeDataset(80);
+                if(all===undefined)
+                    all=10;
+                A=a;
+                if(all-->0)
+                    m.fit(a[0],a[1],{epochs:epochs,batchSize:a[0].shape[0],callbacks:{
+                        onEpochEnd:(A,B)=>document.getElementById("loss").innerHTML=
+                        "Loss: "+B.loss+"<br>accuricy: "+B.acc+"<br>Epochs Left: "+all}
+                    }).then(()=>{if(varDataset)remakeDataset(a);fit(a,all);})
+                    else
+                    console.log("done");
+            }
+
+            function predict(){
+                return tf.tidy(
+                    ()=>{
+                        var v,r;
+                        r=(v=m.predict(getCanvasTensor()).squeeze()).argMax().dataSync()
+                        return [r,v.max().dataSync()]
+                    }
+                    );
+            }
+
+            function check(v){
+                return [v!=-1?drawRandom(v):"??",predict()];
+            }
+
+
+            //testers
+            function train(){
+                fit(Number(document.getElementById("ep").value || 100))
+            }
+
+            function drawR(){
+                var r=check(document.getElementById("n").value||0);
+                document.getElementById("d0").innerHTML=r[0];
+                document.getElementById("d1").innerHTML=r[1][0];
+                document.getElementById("d2").innerHTML="<font color="+(r[0]==r[1][0]?"'green'>":"'red'>")+(Math.floor(r[1][1]*1000)/10)+"%</font>";
+                
+            }
+        </script>
+    <body onload="onload()"><center><table><tr><td>
+        <canvas id="c" width=48 height=48></canvas><canvas id="c2" width=48 height=48></canvas><br>
+        <b id="loss">LOSS</b><br>
+        <button onclick="train()">Train</button> on <input id="ep" value=1000 size=5 />Epochs
+        <h2>Testing</h2>
+        <button onclick="drawR();drawM2();">Draw</button> random <input id="n" value="5" size=1/><br>
+        Drawing [<b id="d0">?</b>], Neural Network sees [<b id="d1">?</b>]<br>
+        Confidence: [<b id="d2">0</b>]<br>
+        <sub><br><br>
+        </td></tr> </table></center>
+        <font color="gray">
+        <h3>About</h3>
+        
+        </sub>
+    </font>
+    </body>
+</html>

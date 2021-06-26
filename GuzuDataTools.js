@@ -480,6 +480,27 @@ class GuzuFileTools {
         return re_;
     }
     
+    ModelgetWeights(model,toString=true){
+        var w=[];
+        var i;
+        for (i=0;i<model.weights.length;i++)
+            w[i]=model.weights[i].read().dataSync();
+            console.log(i)
+        return toString?JSON.stringify(w):w;
+    }
+
+    ModelSetWeights(model,weights,fromString=true){
+        var w=fromString?JSON.parse(weights):weights;
+        var i;
+        var tf=window.tf;
+        for (i=0;i<w.length;i++){
+            w[i]=tf.tensor ( Object.values(w[i]) ,model.weights[i].shape);
+            model.weights[i].write(w[i]);
+        }
+        
+
+    }
+
 }
 
 
