@@ -481,8 +481,7 @@ class GuzuFileTools {
     }
     
     ModelgetWeights(model,toString=true){
-        var w=[];
-        var i;
+        var i,w=[];
         for (i=0;i<model.weights.length;i++)
             w[i]=model.weights[i].read().dataSync();
             console.log(i)
@@ -490,8 +489,7 @@ class GuzuFileTools {
     }
 
     ModelSetWeights(model,weights,fromString=true){
-        var w=fromString?JSON.parse(weights):weights;
-        var i;
+        var i,w=fromString?JSON.parse(weights):weights;
         var tf=window.tf;
         for (i=0;i<w.length;i++){
             w[i]=tf.tensor ( Object.values(w[i]) ,model.weights[i].shape);

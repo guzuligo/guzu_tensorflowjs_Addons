@@ -721,11 +721,24 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
     if(!isNaN(this.strides))
       this.strides=[this.strides,this.strides];
     this.padding=args.padding??'same';
+    this.tensor=args.tensor;
+    this.size=args.size;
+    this.layerBased=!this.tensor && !this.size;
+    //console.log("LB:"+this.layerBased)
   }
   computeOutputShape(inputShape) {
-
-    var a=inputShape[0];
-    var b=inputShape[1];
+    var a,b;//console.log(inputShape)
+    if (this.layerBased){
+      a=inputShape[0];
+      b=inputShape[1];
+    }else{
+      b=inputShape;//[0];
+      if (this.tensor)
+        a=[b[0]].concat(this.tensor.shape);
+      else
+        a=[b[0],this.size[0],this.size[1],this.size[2]??2];
+    }
+    
 
     //initialize and remember output shape
     if (this.init){this.init=false;
@@ -752,7 +765,7 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
         }
       }
 
-      
+      //console.log("a",a,"b",b,"in",inputShape,"lb:",this.layerBased);
       var targetShape=[ this.kernelSize[0],this.kernelSize[1],a[3]
       ,(b[1]/ (a[3]*this.kernelSize[0]*this.kernelSize[1]))    ];
       //console.log(a,b,this.kernelSize,targetShape);
@@ -767,42 +780,85 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
     //console.log(c);
     return  c;
   }
+
+
+
   call(it, kwargs){ 
-    
-    var a=it[0];//Array.isArray(it)?it[0]:it;
-    var b=it[1];
+    var a,b;
+    var i,j,result;
+    var length;
+    var layerBased_=this.layerBased;//if two layers used instead of one tensor
+    if(Array.isArray(it)){
+      a=it[0];//Array.isArray(it)?it[0]:it;
+      b=it[1];
+    }else 
+      a=it;
+    length=a.shape[0];
+    //
+    //console.log("it:",it,it[0].shape)
+    if (!b){
+      layerBased_=false;
+      b=a;
+      if(this.tensor)a=this.tensor;else{
+        var x=this.size[0],y=this.size[1];
+        //a=tf.range(0,y).div(y-1). expandDims(1).tile([1,x]). stack( tf.range(0,x).div(x-1) .expandDims(0).tile([y,1]),2)
+        a=tf.range(0,y).div(y-1). expandDims(1).tile([1,x]).expandDims(2);//. stack( tf.range(0,x).div(x-1) .expandDims(0).tile([y,1]),2)
+        for (i=1;i<this.size[2]??2;i++)
+          a=a.concat((i&1)
+          ?tf.range(0,x).div(x-1) .expandDims(0).tile([y,1]).expandDims(2)
+          :tf.range(0,y).div(y-1). expandDims(1).tile([1,x]).expandDims(2)
+          ,2)
+
+
+      }
+    }
+
     //console.log("bu:"+it[0])
     
     if(false && this.biasUnits>0){
       //var o=tf.ones([a.shape[0],this.biasUnits]);//o.print();//adding bias
       //a=tf.concat([a,o],1);
     }
-
-
-    var targetShape=[a.shape[0],this.kernelSize[0],this.kernelSize[1],a.shape[3]
-      ,(b.size/(a.shape[0]*a.shape[3]*this.kernelSize[0]*this.kernelSize[1])  )];//a.shape[1],b.shape[1]/a.shape[1]];
+    //console.log("a shape:"+a.shape,"b shape:"+b.shape,"b size:"+b.size)
+    var a3=layerBased_?a.shape[3]:a.shape[2];
+    var targetShape=[length,this.kernelSize[0],this.kernelSize[1],a3
+      ,(b.size/(length*a3*this.kernelSize[0]*this.kernelSize[1])  )];//a.shape[1],b.shape[1]/a.shape[1]];
     //var targetShape=[a.shape[0]].concat(this.outputshape_);
     //console.log("target Shape:",targetShape,"oldShape:",b.shape,"a shape:",a.shape)
     b=b.reshape(targetShape);
     //a=a.expandDims(-1);
     //a=a.mul(b).sum(-2);
-    //console.log(this.padding);
-    var i,j,result;
+    //console.log("b shape",b.shape);
     
-    a=a.split(a.shape[0],0);
-    b=b.split(b.shape[0],0);
-
-    for (i=0;i<b.length;i++){//console.log(i);//b.slice([i],[1]).print();
-      j=tf.conv2d(a[i],b[i].squeeze(0),this.strides,this.padding);
+    
+    b=length>1?b.split(length,0):[b];
+    if(layerBased_)
+      a=length>1?a.split(length,0):[a];
+      
+    //console.log("a new shape ",a)
+    //console.log("layerb",layerBased_)
+    for (i=0;i<length;i++){//if(i<2)console.log("i=",i,length,a.shape);//b[i].print()//.slice([i],[1]).print();
+      j=tf.conv2d(layerBased_?a[i]:a,b[i].squeeze(0),this.strides,this.padding);
       //j=tf.conv2d(a.slice([0],[1]),b.slice([0],[1]).squeeze(0),this.strides,this.padding);
+      //console.log("i=",i)
+      /*
       if(i==0)
-        result=j//.expandDims(0);
+        result=j.expandDims(0);
       else
-      result=result.concat(j,0);
+        result=result.concat(j.expandDims(0),0);
+        */
+      result=i?result.concat(j.expandDims(0),0):j.expandDims(0);
       window.J=result; 
     }
-    //console.log(result)
-    return result;
+    
+    
+    if(result.shape.length>4)
+      result=result.squeeze(1);
+    //console.log("result shape:",result.shape)
+    //result.print();
+    //if(result[0]==1)result.squeeze();
+
+    return result.clone();
   }
 }
 
@@ -960,7 +1016,7 @@ window._guzuTF.GuzuTfTools=class GuzuTfTools{
       v:val===undefined?-1:val,
       b:bias?bias:0,
       apply:function(applyto){
-        var tool="conv"+(applyto.rank-2)+"d";
+        var tool="conv"+((applyto.rank-2)||1)+"d";
         //console.log(applyto);
         //console.log(tool);
         //if (applyto.shape)

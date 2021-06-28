@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Sum Test</title>
+        <title>conv2d Test</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src='../google/tensorflow2.7.0.min.js'></script>
@@ -24,7 +24,7 @@
              .to("mx3",tf.layers.maxPooling2d({poolSize:[2,2],strides:[2,2]}))
              //.to("mxb",tf.layers.sumPooling2d({poolSize:[3,3],strides:[3,3]}))
             
-             p.to("cc2",tf.layers.conv2d({kernelSize:[2,2],strides:[1,1],filters:16,activation:'relu6'}))
+             p.to("cc2",tf.layers.conv2d({kernelSize:[2,2],strides:[1,1],filters:64,activation:'relu6'}))
              .to("mx2",tf.layers.maxPooling2d({poolSize:[4,4],strides:[1,1]}))
              
             p.to("f",tf.layers.flatten());

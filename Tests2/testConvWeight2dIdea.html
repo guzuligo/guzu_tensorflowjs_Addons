@@ -11,6 +11,7 @@
         <script src="../layerFixedConv2d.js"></script>
         <script>
             //model maker
+            tf.backend("cpu")
             var l1=tf.regularizers.l1({l1:0.0001});
             var kernelSize=2;
             var filters=4;
@@ -179,7 +180,7 @@
                     all=10;
                 A=a;
                 if(all-->0)
-                    m.fit(a[0],a[1],{epochs:epochs,batchSize:32,callbacks:{//onBatchBegin:()=>console.log("A"),
+                    m.fit(a[0],a[1],{epochs:epochs,batchSize:31,callbacks:{//onBatchBegin:()=>console.log("A"),
                         onEpochEnd:(A,B)=>document.getElementById("loss").innerHTML=
                         "Loss: "+B.loss+"<br>accuricy: "+B.acc+"<br>Epochs Left: "+all}
                     }).then(()=>{if(varDataset)remakeDataset(a);fit(a,all);})

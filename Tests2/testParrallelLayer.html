@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>conv2d Test</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src='../google/tensorflow3.6.0.min.js'></script>
+        <script src='../TFLayerPath.js'></script>
+        <script src='../GuzuTFPlugins.js'></script>
+        <script src="../GuzuDataTools.js"></script>
+        <script src="../layerFixedConv2d.js"></script>
+        <script>
+            //model maker
+            var i=0;
+            var p=tf.util.path();
+            var f;//filters
+            var k;//kernal
+            p.add("in",tf.input({shape:[1]}));
+            //p.to("d0",tf.layers.dense({units:400,activation:"tanh"}));
+            p.to("m0",tf.layers.temp({call:(inp)=>inp.mul(.1).add(.1)}))
+            p.to("d1",tf.layers.dense({units:48,activation:"relu6"}));
+            p.to("md0",tf.layers.temp({call:(inp)=>inp.mul(10)}))
+
+            var src=[];
+            //for (i=0;i<3;i++){
+                p.add("d2-"+i,tf.layers.dense({units:(k=4)*k*(f=2)* (20),activation:'linear'}),"md0");
+                //p.to("m1-"+i,tf.layers.temp({call:(inp)=>inp.mul(10)}))
+                //p.to("re",tf.layers.reshape({targetShape:[1,1,6]}));
+                p.to("C1-"+i,tf.layers.convWeight2d({size:[48*10,48*10,f],kernelSize:[k,k],strides:[4,4]}))//48/48
+                p.to("p1-"+i,tf.layers.maxPooling2d({poolSize:[2,2],strides:[1,1]}));
+                
+                p.to("m2-"+i,tf.layers.temp({call:(inp)=>inp.mul(.10)}));
+                p.to("coo-"+i,tf.layers.coord({}));
+                p.to("c1b-"+i,tf.layers.conv2d({filters:4,kernelSize:[2,2],strides:[1,1],activation:'relu6'}))
+                p.to("p1b-"+i,tf.layers.maxPooling2d({poolSize:[2,2],strides:[1,1]}));
+                
+                p.to("c1c-"+i,tf.layers.conv2d({filters:40,kernelSize:[20,20],strides:[1,1],activation:'relu6'}))
+                p.to("p1c-"+i,tf.layers.maxPooling2d({poolSize:[3,3],strides:[1,1]}));
+                src.push("c1-"+i);
+            //};p.add("mix",tf.layers.add(),src);
+            
+            //
+            
+            //p.to("f1",tf.layers.flatten());
+            //p.to("C2",tf.layers.convWeight2d({size:[48*4,48*4],kernelSize:[4,4],strides:[1,1]}))//48/48
+            //p.to("p2",tf.layers.maxPooling2d({poolSize:[4,4],strides:[1,1]}));
+            p.to("m3",tf.layers.temp({call:(inp)=>inp.mul(10)}))
+            p.to("c2",tf.layers.conv2d({filters:3,kernelSize:[2,2],strides:[2,2],padding:'same',activation:'relu'}))
+            p.to("m4",tf.layers.temp({call:(inp)=>inp.mul(1)}))
+            //p.to("c3",tf.layers.conv2d({filters:3,kernelSize:[2,2],strides:[2,2]}))
+            //p.to("c2t",tf.layers.conv2dTranspose({filters:3,kernelSize:[1,1],strides:[48,48]}))
+            //p.to("re",tf.layers.reshape({targetShape:[48,48,3]}));
+            var m=p.Model(null,null,0.00001);
+        </script>
+
+        <script>
+            function predict(val=1){tf.tidy(()=>{
+                var r;
+                tf.browser.toPixels(r=m.predict(tf.tensor([val])).squeeze().minimum(1).maximum(0),document.getElementById("c"));
+                return r.dataSync();
+            })};
+
+            function redraw(x=0){
+                tf.tidy(()=>{tf.browser.toPixels(t1.slice([x],[1]).squeeze(),document.getElementById("c"))});
+            }
+
+            var tft1;
+            function train(epochs=10000){
+                m.fit(tft1,t1,{epochs:epochs});
+            }
+
+            
+        </script>
+
+        <script>
+            var gt,t1,tall;
+            function ready(){
+                gt=new GuzuFileTools("file");
+            }
+
+            function load(){
+              
+              var data=gt.NNDatasetFromImages({divide:255,c:7,xscale:.2,yscale:.2,x:-10,y:-10,w:48,h:48, rescale:!true   })
+              gt.onload=()=>{
+                t1=tf.tensor(data.data[0]);//.slice([0,0,0],[1,48,48]);
+                tft1=tf.tidy(()=>tf.range(0,t1.shape[0]).expandDims(1));
+                tf.browser.toPixels(t1.slice([0],[1]).squeeze(),document.getElementById("c"));
+              };
+            }
+            
+
+        </script>
+        <body onload="ready()">
+
+            <input type="file" id="file" multiple onchange="load()"/><br>
+            <canvas id="c"></canvas>
+
+        </body>
+    </head>
+</html>
