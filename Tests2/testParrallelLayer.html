@@ -11,51 +11,62 @@
         <script src="../layerFixedConv2d.js"></script>
         <script>
             //model maker
-            var i=0;
-            var p=tf.util.path();
+            var n,i=0;
+            var p=tf.util.path();//p.rename=true;
             var f;//filters
             var k;//kernal
             p.add("in",tf.input({shape:[1]}));
             //p.to("d0",tf.layers.dense({units:400,activation:"tanh"}));
             p.to("m0",tf.layers.temp({call:(inp)=>inp.mul(.1).add(.1)}))
-            p.to("d1",tf.layers.dense({units:48,activation:"tanh"}));
-            p.to("md0",tf.layers.temp({call:(inp)=>inp.mul(10)}))
+            p.to("d1",tf.layers.dense({units:4,activation:"tanh"}));
+            p.to("md0",tf.layers.temp({call:(inp)=>inp.mul(3)}))
 
             var src=[];
-            //for (i=0;i<3;i++){
-                p.add("d2-"+i,tf.layers.dense({units:(k=4)*k*(f=2)* (3),activation:'linear'}),"md0");
-                //p.to("m1-"+i,tf.layers.temp({call:(inp)=>inp.mul(10)}))
+            var j;
+            for (i=0;i<3;i++){
+                j=0;
+                p.add(n="d2-"+i,tf.layers.dense({units:(k=2)*k*(f=3)* (16),activation:'tanh',name:n}),"md0");
+                p.to(`m1-${i}-${j++}`,tf.layers.temp({call:(inp)=>inp.mul(3)}))
                 //p.to("re",tf.layers.reshape({targetShape:[1,1,6]}));
                 //p.to("C1-"+i,tf.layers.convWeight2d({size:[48*10,48*10,f],kernelSize:[k,k],strides:[4,4]}))//48/48
-                p.to("C1-"+i,tf.layers.convWeight2d({tensor:tf.variable(tf.randomNormal([48*4,48*4,f])),kernelSize:[k,k],strides:[2,2]}))//48/48
-                p.to("p1-"+i,tf.layers.maxPooling2d({poolSize:[2,2],strides:[1,1]}));
+                p.to(n=`C1-${i}-${j++}`,tf.layers.convWeight2d({size:[64*2,64*2,f],kernelSize:[k,k],strides:[1,1]}))//48/48
+                p.to(n=`c1-${i}-${j++}`,tf.layers.conv2d({filters:30,kernelSize:[8,8],strides:[1,1],activation:'tanh'}));
+                p.to(n=`P1-${i}-${j++}`,tf.layers.maxPooling2d({poolSize:[2,2],strides:[1,1]}));
+                p.to(n=`c1-${i}-${j++}`,tf.layers.conv2d({filters:3,kernelSize:[4,4],strides:[1,1],activation:'relu6'}));
+                p.to(n=`gps${i}-${j++}`,tf.layers.coord());
+                //p.to(n=`P1-${i}-${j++}`,tf.layers.maxPooling2d({poolSize:[2,2],strides:[1,1],padding:'same'}));
+                p.to(n=`c1-${i}-${j++}`,tf.layers.conv2d({filters:80,kernelSize:[8,8],strides:[1,1],activation:'tanh'}));
+                p.to(n=`P1-${i}-${j++}`,tf.layers.maxPooling2d({poolSize:[2,2],strides:[1,1]}));
+                p.to(n=`c1-${i}-${j++}`,tf.layers.conv2d({filters:8,kernelSize:[4,4],strides:[1,1],activation:'relu6'}));
+                p.to(n=`gps${i}-${j++}`,tf.layers.coord());
+                //p.to(n=`P1-${i}-${j++}`,tf.layers.maxPooling2d({poolSize:[2,2],strides:[1,1],padding:'same'}));
+                p.to(n=`c1-${i}-${j++}`,tf.layers.conv2d({filters:80,kernelSize:[4,4],strides:[1,1],activation:'tanh'}));
+                p.to(n=`P1-${i}-${j++}`,tf.layers.maxPooling2d({poolSize:[2,2],strides:[1,1]}));
+                p.to(n=`c1-${i}-${j++}`,tf.layers.conv2d({filters:2,kernelSize:[4,4],strides:[1,1],activation:'relu6'}));
+                p.to(n=`gps${i}-${j++}`,tf.layers.coord());
+                //p.to(n=`P1-${i}-${j++}`,tf.layers.maxPooling2d({poolSize:[2,2],strides:[1,1],padding:'same'}));
                 
-                p.to("m2-"+i,tf.layers.temp({call:(inp)=>inp.mul(.10)}));
-                p.to("coo-"+i,tf.layers.coord({}));
-                p.to("c1b-"+i,tf.layers.conv2d({filters:4,kernelSize:[2,2],strides:[1,1],activation:'tanh'}))
-                p.to("p1b-"+i,tf.layers.maxPooling2d({poolSize:[2,2],strides:[1,1]}));
-                
-                p.to("c1c-"+i,tf.layers.conv2d({filters:40,kernelSize:[4,4],strides:[1,1],activation:'relu6'}))
-                p.to("p1c-"+i,tf.layers.maxPooling2d({poolSize:[3,3],strides:[1,1]}));
-                src.push("p1c-"+i);
-            //};p.add("mix",tf.layers.add(),src);
+                p.to(n="c1c-"+i,tf.layers.conv2d({filters:3,kernelSize:[2,2],strides:[1,1],activation:'relu6'}))
+                p.to(n="p1c-"+i,tf.layers.maxPooling2d({poolSize:[2,2],strides:[2,2]}));
+                src.push(n);
+            };p.add("mix",tf.layers.add(),src);
             
             //
             
             //p.to("f1",tf.layers.flatten());
             //p.to("C2",tf.layers.convWeight2d({size:[48*4,48*4],kernelSize:[4,4],strides:[1,1]}))//48/48
             //p.to("p2",tf.layers.maxPooling2d({poolSize:[4,4],strides:[1,1]}));
-            p.to("m3",tf.layers.temp({call:(inp)=>inp.mul(10)}))
+            //p.to("m3",tf.layers.temp({call:(inp)=>inp.mul(10)}))
             i=0;
-            for (i=0;i<5;i++){
-                p.to("c2-"+i,tf.layers.conv2d({filters:3,kernelSize:[9,9],strides:[1,1],padding:'same',activation:'relu'}))
-                p.to("p2-"+i,tf.layers.maxPooling2d({poolSize:[9,9],strides:[1,1]}));
+            for (i=0;i<1;i++){
+                p.to("c2-"+i,tf.layers.conv2d({filters:3,kernelSize:[2,2],strides:[1,1],activation:'relu',name:'banana_'+i}))
+                //p.to("p2-"+i,tf.layers.maxPooling2d({poolSize:[9,9],strides:[1,1]}));
             }
-            //p.to("m4",tf.layers.temp({call:(inp)=>inp.mul(1)}))
+            //p.to("m4",tf.layers.temp({call:(inp)=>inp.mul(.1)}))
             //p.to("c3",tf.layers.conv2d({filters:3,kernelSize:[2,2],strides:[2,2]}))
             //p.to("c2t",tf.layers.conv2dTranspose({filters:3,kernelSize:[1,1],strides:[48,48]}))
             //p.to("re",tf.layers.reshape({targetShape:[48,48,3]}));
-            var m=p.Model(null,null,0.00001);
+            var m=p.Model(null,null,0.0001);
         </script>
 
         <script>

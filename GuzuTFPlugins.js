@@ -768,6 +768,10 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
       //console.log("a",a,"b",b,"in",inputShape,"lb:",this.layerBased);
       var targetShape=[ this.kernelSize[0],this.kernelSize[1],a[3]
       ,(b[1]/ (a[3]*this.kernelSize[0]*this.kernelSize[1]))    ];
+      if (targetShape[3]!=(targetShape[3]|0))
+        throw(`ConvWeight2D Error: Resulting shape has fractions.\n"${b[1]}/(${a[3]}*${targetShape[0]}*${targetShape[1]})=${targetShape[3]}" on layer ${this.name}.`
+        +` \nPlease check: (filter size)/(input channels* kernelSize)`);
+      //console.log((targetShape[3]!=(targetShape[3]|0)))
       //console.log(a,b,this.kernelSize,targetShape);
       this.outputshape_=tf.conv2d(tf.ones(a.slice(1)),tf.ones(targetShape),this.strides,this.padding).shape;
       
@@ -823,6 +827,7 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
     var a3=layerBased_?a.shape[3]:a.shape[2];
     var targetShape=[length,this.kernelSize[0],this.kernelSize[1],a3
       ,(b.size/(length*a3*this.kernelSize[0]*this.kernelSize[1])  )];//a.shape[1],b.shape[1]/a.shape[1]];
+    //console.log(`ConvWeight2D:\n"${b.size}/(${a3}*${targetShape[1]}*${targetShape[2]})=${targetShape[4]}" on layer ${this.name}.`)
     //var targetShape=[a.shape[0]].concat(this.outputshape_);
     //console.log("target Shape:",targetShape,"oldShape:",b.shape,"a shape:",a.shape)
     b=b.reshape(targetShape);

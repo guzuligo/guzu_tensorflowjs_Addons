@@ -7,6 +7,7 @@ window._guzuTF.TFLayerPath=class TFLayerPath{
     this.layerPath=[];
     this.layerNames={};
     this.name=name;
+    this.rename=true;
   }
   
   //TODO:needs testing
@@ -26,6 +27,7 @@ window._guzuTF.TFLayerPath=class TFLayerPath{
     this.layerNames[index_]={id:this.layerPath.length,defaults:{trainable:layer_.trainable}};
     this.layerPath.push([index_,layer_,applytoIndex,-1]);//[ name, tf.layer , #to apply to, redirect ]
     this._lastIndex=index_;
+    if(this.rename)layer_.name=index_;
     return this;
   }
   
