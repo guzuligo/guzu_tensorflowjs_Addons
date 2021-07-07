@@ -724,8 +724,33 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
     this.tensor=args.tensor;
     this.size=args.size;
     this.layerBased=!this.tensor && !this.size;
+    
     //console.log("LB:"+this.layerBased)
+    
   }
+
+  makeTensor(){
+    var a;
+    var x=this.size[0],y=this.size[1];
+    //a=tf.range(0,y).div(y-1). expandDims(1).tile([1,x]). stack( tf.range(0,x).div(x-1) .expandDims(0).tile([y,1]),2)
+    a=tf.range(0,y).div(y-1). expandDims(1).tile([1,x]).expandDims(2);//. stack( tf.range(0,x).div(x-1) .expandDims(0).tile([y,1]),2)
+    for (i=1;i<this.size[2]??2;i++)
+      a=a.concat((i&1)
+      ?this._cos(tf.range(0,x).div(x-1),i) .expandDims(0).tile([y,1]).expandDims(2)
+      :this._cos(tf.range(0,y).div(y-1),i). expandDims(1).tile([1,x]).expandDims(2)
+      ,2)
+
+    return this.tensor=a;
+  }
+
+  _cos(t,i){
+    if (i<2 && i>-1)return t;
+    i=0|(i*.5);
+    return tf.cos(t.mul(Math.PI*i));
+
+  }
+
+
   computeOutputShape(inputShape) {
     var a,b;//console.log(inputShape)
     if (this.layerBased){
@@ -786,6 +811,10 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
   }
 
 
+  build(){
+    if(!this.tensor && this.tensor!==false)
+      this.tensor=this.makeTensor();
+  }
 
   call(it, kwargs){ 
     var a,b;
@@ -803,18 +832,7 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
     if (!b){
       layerBased_=false;
       b=a;
-      if(this.tensor)a=this.tensor;else{
-        var x=this.size[0],y=this.size[1];
-        //a=tf.range(0,y).div(y-1). expandDims(1).tile([1,x]). stack( tf.range(0,x).div(x-1) .expandDims(0).tile([y,1]),2)
-        a=tf.range(0,y).div(y-1). expandDims(1).tile([1,x]).expandDims(2);//. stack( tf.range(0,x).div(x-1) .expandDims(0).tile([y,1]),2)
-        for (i=1;i<this.size[2]??2;i++)
-          a=a.concat((i&1)
-          ?tf.range(0,x).div(x-1) .expandDims(0).tile([y,1]).expandDims(2)
-          :tf.range(0,y).div(y-1). expandDims(1).tile([1,x]).expandDims(2)
-          ,2)
-
-
-      }
+      if(this.tensor)a=this.tensor;//else a=this.makeTensor();
     }
 
     //console.log("bu:"+it[0])
