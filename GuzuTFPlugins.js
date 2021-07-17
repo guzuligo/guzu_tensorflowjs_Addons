@@ -464,6 +464,7 @@ tf.serialization.registerClass(window._guzuTF.Mutation2d);  // Needed for serial
 
 
 //////
+//example use: tf.layers.temp({call:(inp)=>inp.mul(2)})
 window._guzuTF.TemporaryLayer=class TemporaryLayer extends tf.layers.Layer {
   static get className() {
         return 'Temporary';
