@@ -724,6 +724,9 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
     this.padding=args.padding??'same';
     this.tensor=args.tensor;
     this.size=args.size;
+    this.seed=args.seed??0;
+    this.noise=args.noise??0;
+    this.cosGain=args.cosGain??1;
     this.layerBased=!this.tensor && !this.size;
     
     //console.log("LB:"+this.layerBased)
@@ -740,14 +743,17 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
       ?this._cos(tf.range(0,x).div(x-1),i) .expandDims(0).tile([y,1]).expandDims(2)
       :this._cos(tf.range(0,y).div(y-1),i). expandDims(1).tile([1,x]).expandDims(2)
       ,2)
-
+    
     return this.tensor=a;
   }
 
   _cos(t,i){
+    window.ttt=this;
     if (i<2 && i>-1)return t;
-    i=0|(i*.5);
-    return tf.cos(t.mul(Math.PI*i));
+    var I=(i%4<2)?1:-1;
+    i=0|(i*.5);//To compensate for x and y
+    
+    return tf.cos(t.mul(Math.PI*i*this.cosGain)  ).mul(I);
 
   }
 
@@ -815,6 +821,9 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
   build(){
     if(!this.tensor && this.tensor!==false)
       this.tensor=this.makeTensor();
+    if (this.noise)
+      this.tensor=this.tensor.add(tf.randomUniform(this.tensor.shape,-this.noise,this.noise,'float32',this.seed??0));
+    //this.tensor=this.tensor;
   }
 
   call(it, kwargs){ 
@@ -833,9 +842,12 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
     if (!b){
       layerBased_=false;
       b=a;
-      if(this.tensor)a=this.tensor;//else a=this.makeTensor();
+      //if(this.tensor)
+      a=this.tensor;//else a=this.makeTensor();
     }
 
+
+    
     //console.log("bu:"+it[0])
     
     if(false && this.biasUnits>0){
@@ -872,7 +884,9 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
         result=result.concat(j.expandDims(0),0);
         */
       result=i?result.concat(j.expandDims(0),0):j.expandDims(0);
-      window.J=result; 
+      //window.J=result; 
+      //result.sum().print();
+      //console.log(a.shape);
     }
     
     
