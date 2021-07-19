@@ -5,7 +5,9 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src='../google/tensorflow3.6.0.min.js'></script>
+        <script src='../google/tfjs-vis@1.4.3.js'></script>
         <script src='../TFLayerPath.js'></script>
+        
         <script src='../GuzuTFPlugins.js'></script>
         <script src="../GuzuDataTools.js"></script>
         <script src="../layerFixedConv2d.js"></script>
@@ -20,31 +22,60 @@
             p.to("m0",tf.layers.temp({call:(inp)=>inp.mul(.1).add(.1)}))
             p.to("d1",tf.layers.dense({units:4,activation:"tanh"}));
             p.to("md0",tf.layers.temp({call:(inp)=>inp.mul(3)}))
+            p.to("d2",tf.layers.dense({units:4,activation:"linear"}));
+            
 
             var src=[];
             var j;i=0;
+            window.tens=[];//DEBUG tool
+            var cw2d;
+            var noiseLayer=tf.layers.gaussianNoise({stddev:0.05});
             for (i=0;i<8;i++){
+                var dp=i/10;
                 j=0;var k2,k3;
                 var i3=i%2;
                 var f2;
-                p.add(n=`D-${i}-${j++}`,tf.layers.dense({units:(k=6-(i%3))*k*(f=8)* (3),activation:'linear',name:n}),"md0");
+                var opc;//output channels
+                p.add(n=`D-${i}-${j++}`,tf.layers.dense({units:(k=7-(i%1))*k*(f=12)* (opc=30),activation:'relu6',name:n}),"md0");
+                p.to (n=`Drop-${i}-${j++}`,tf.layers.dropout({rate:dp}));
                 //p.to(`m1-${i}-${j++}`,tf.layers.temp({call:(inp)=>inp.mul(3)}))
                 //p.to("re",tf.layers.reshape({targetShape:[1,1,6]}));
                 //p.to("C1-"+i,tf.layers.convWeight2d({size:[48*10,48*10,f],kernelSize:[k,k],strides:[4,4]}))//48/48
                 
-                //IDEA: Need high frequency input and low frequency input as an additional channel. Just like JPG
-                p.to(n=`C-${i}-${j++}`,tf.layers.convWeight2d({size:[48*3+4,48*3+4,f],kernelSize:[k,k],strides:[3,3]}))//48/48
-                
-                p.to(n=`B-${i}-${j++}`,tf.layers.cropping2D({cropping:[[1, 1], [1, 1]]}));
+                var size=48*7;//*3*4+4*9;
+                size=[size,size,f]
+                //p.to(n=`C-${i}-${j++}`,cw2d||(cw2d=tf.layers.convWeight2d({size:size,kernelSize:[k,k],strides:[4,4],noise:.01,seed:i,cosGain:1})))//48/48
+                p.to(n=`C-${i}-${j++}`,(cw2d=tf.layers.convWeight2d({size:size,kernelSize:[k,k],strides:[2,2],noise:0.2,seed:i,cosGain:2,noiseOp:tf.mul})))//48/48
+                //var ten=tf.randomUniform(size,-.1,.1,'float32',i)
+                //lll.tensor=lll.tensor.add(ten);
+                //p.to(n=`C-${i}-${j++}`,tf.layers.convWeight2d({tensor:ten,kernelSize:[k,k],strides:[3,3]}))//48/48
+                if (true){
+                    p.to(n=`max-${i}-${j++}`,tf.layers.maxPooling2d({poolSize:[3,3],strides:[3,3]}))
+                    p.to(n=`conv2d-${i}-${j++}`,tf.layers.separableConv2d({kernelSize:[4,4],strides:[1,1],filters:9,depthMultiplier:30,activation:'relu6'}))
+                    p.to (n=`Drop-${i}-${j++}`,tf.layers.dropout({rate:dp}));
+                    //p.to(n="m_inverse_"+i,tf.layers.temp({call:(inp)=>inp.mul(-1)}));
+                    
+                    
+                    p.to(n=`conv2d-${i}-${j++}`,tf.layers.conv2d({kernelSize:[3,3],strides:[1,1],filters:90,activation:'linear'}))
+                    p.to (n=`Drop-${i}-${j++}`,tf.layers.dropout({rate:dp}));
+                    
+                    p.to(n=`conv2d-${i}-${j++}`,tf.layers.conv2d({kernelSize:[4,4],strides:[1,1],filters:1}))
+                    
+                }
+                //window.tens.push(ten);//DEBUG
+                //p.to(n=`B-${i}-${j++}`,tf.layers.cropping2D({cropping:[[1, 1], [1, 1]]}));
+                //p.to(n=`noise-${i}-${j++}`,noiseLayer);
                 //p.to(n=`F-${i}-${j++}`,tf.layers.flatten());
 
                 //p.to(n=`C-${i}-${j++}`,tf.layers.convWeight2d({size:[48*2,48*2,16],kernelSize:[4,4],strides:[2,2]}))//48/48
                 
-                p.to(n="m_iterate_"+i,tf.layers.temp({call:(inp)=>inp.mul((1-(i%2))*2)}))
+                p.to(n="m_iterate_"+i,tf.layers.temp({call:(inp)=>inp.mul((1-(i%2)*2)*2/(i*.5+1))}))
+                //console.log((1-(i%2)*2)*  1);
                 src.push(n);
-            };p.add("mix",tf.layers.add(),src);
+            };
+            if(i>1)p.add("mix",tf.layers.add(),src);
             
-            var m=p.Model(null,null,0.0001);
+            var m=p.Model(null,null,0.001);
         </script>
 
         <script>
@@ -73,7 +104,10 @@
 
             var tft1;
             function train(epochs=10000){
-                m.fit(tft1,t1,{epochs:epochs,/*batchSize:3*/});
+                m.fit(tft1,t1,{
+                    epochs:epochs,batchSize:3,
+                    callbacks: tfvis.show.fitCallbacks({name:'training',tab:'training'}, ['loss'],window.tfvisfit={yAxisDomain:[0,.2],xAxisDomain:[0,100]})
+                });
             }
 
             function printLoss(){
@@ -89,7 +123,7 @@
 
             function load(){
               
-              var data=gt.NNDatasetFromImages({divide:255,c:7,w:48,h:48,/*xscale:.2,yscale:.2,x:-10,y:-10, rescale:!true*/   })
+              var data=gt.NNDatasetFromImages({divide:255,c:1,w:48,h:48,/*xscale:.2,yscale:.2,x:-10,y:-10, rescale:!true*/   })
               gt.onload=()=>{
                 t1=tf.tensor(data.data[0]);//.slice([0,0,0],[1,48,48]);
                 tft1=tf.tidy(()=>tf.range(0,t1.shape[0]).expandDims(1));

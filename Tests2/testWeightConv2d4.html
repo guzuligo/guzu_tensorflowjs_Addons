@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>conv2d Test</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src='../google/tensorflow3.6.0.min.js'></script>
+        <script src='../google/tfjs-vis@1.4.3.js'></script>
+        <script src='../TFLayerPath.js'></script>
+        
+        <script src='../GuzuTFPlugins.js'></script>
+        <script src="../GuzuDataTools.js"></script>
+        <script src="../layerFixedConv2d.js"></script>
+        <script>
+            //model maker
+            var n,i=0;
+            var p=tf.util.path();//p.rename=true;
+            var f;//filters
+            var k;//kernal
+            p.add("in",tf.input({shape:[1]}));
+            //p.to("d0",tf.layers.dense({units:400,activation:"tanh"}));
+            p.to("m0",tf.layers.temp({call:(inp)=>inp.mul(.1).add(.1)}))
+            p.to("d1",tf.layers.dense({units:4,activation:"tanh"}));
+            p.to("md0",tf.layers.temp({call:(inp)=>inp.mul(3)}))
+            p.to("d2",tf.layers.dense({units:4,activation:"linear"}));
+            
+
+            var src=[];
+            var j;i=0;
+            window.tens=[];//DEBUG tool
+            var cw2d;
+            var noiseLayer=tf.layers.gaussianNoise({stddev:0.05});
+            
+            
+            j=0;
+            var opc;//output channels
+            p.add(n=`D-${i}-${j++}`,tf.layers.dense({units:(k=7-(i%1))*k*(f=4)* (opc=30),activation:'relu6',name:n}),"md0");
+            p.to (n=`xDrop-${i}-${j++}`,tf.layers.dropout({rate:0.1}));
+            
+            var size=48*14-4;//*3*4+4*9;
+            size=[size,size,f]
+            //p.to(n=`C-${i}-${j++}`,cw2d||(cw2d=tf.layers.convWeight2d({size:size,kernelSize:[k,k],strides:[4,4],noise:.01,seed:i,cosGain:1})))//48/48
+            p.to(n=`C-${i}-${j++}`,(cw2d=tf.layers.convWeight2d({size:size,kernelSize:[k,k],strides:[2,2],noise:0.2,seed:i,cosGain:1.2,noiseOp:tf.mul})))//48/48
+            //var ten=tf.randomUniform(size,-.1,.1,'float32',i)
+            //lll.tensor=lll.tensor.add(ten);
+            //p.to(n=`C-${i}-${j++}`,tf.layers.convWeight2d({tensor:ten,kernelSize:[k,k],strides:[3,3]}))//48/48
+            var pto;
+            p.to(pto=n=`max--${i}-${j++}`,tf.layers.maxPooling2d({poolSize:[3,3],strides:[3,3]}))
+
+            
+            p.add(n=`conv2d-${i}-${j++}`,tf.layers.conv2d({kernelSize:[4,4],strides:[1,1],filters:6,activation:'relu6'}),pto)
+            p.to(pto=n=`max--${i}-${j++}`,tf.layers.maxPooling2d({poolSize:[3,3],strides:[2,2]}))
+            p.to (pto=n=`Drop-${i}-${j++}`,tf.layers.dropout({rate:0.1}));
+            //p.to(n="m_inverse_"+i,tf.layers.temp({call:(inp)=>inp.mul(-1)}));
+            var dp;
+            for (i=0;i<2;i++){j=0;dp=i/6;      
+                p.add(n=`sConv2d-${i}-${j++}`,tf.layers.separableConv2d({kernelSize:[3,3],strides:[1,1],depthMultiplier:3,filters:10,activation:'linear'}),pto);
+                p.to (n=`Drop-${i}-${j++}`,tf.layers.dropout({rate:dp}));
+                
+                p.to(n=`conv2d-${i}-${j++}`,tf.layers.conv2d({kernelSize:[4,4],strides:[1,1],filters:1,activation:'relu6'}))
+                
+                p.to(n="m_iterate_"+i,tf.layers.temp({call:(inp)=>inp.mul((1-(i%2)*2)*2/(i*.5+1))}))
+                //console.log((1-(i%2)*2)*  1);
+                src.push(n);
+            };
+            if(i>1)p.add("mix",tf.layers.add(),src);
+            
+            var m=p.Model(null,null,0.0001);
+        </script>
+
+        <script>
+            var X=0;
+            function XLess(){
+                X=X-1;
+                if(X<0)X=0;
+                redraw(-1)
+            }
+            function XMore(){
+                X=X+1;
+                if(X>=t1.shape[0])X=t1.shape[0]-1;
+                redraw(-1)
+            }
+            function predict(val=1){tf.tidy(()=>{
+                if (val<0)val=X%t1.shape[0];
+                var r;
+                tf.browser.toPixels(r=m.predict(tf.tensor([val])).squeeze().minimum(1).maximum(0),document.getElementById("c"));
+                return r.dataSync();
+            })};
+
+            function redraw(x=0){
+                if (x<0)x=X%t1.shape[0];
+                tf.tidy(()=>{tf.browser.toPixels(t1.slice([x],[1]).squeeze(),document.getElementById("c"))});
+            }
+
+            var tft1;
+            function train(epochs=10000){
+                m.fit(tft1,t1,{
+                    epochs:epochs,batchSize:3,
+                    callbacks: tfvis.show.fitCallbacks({name:'training',tab:'training'}, ['loss'],window.tfvisfit={yAxisDomain:[0,.2],xAxisDomain:[0,100]})
+                });
+            }
+
+            function printLoss(){
+                return m.history.history.loss[-1+m.history.history.loss.length].dataSync()[0];
+            }
+        </script>
+
+        <script>
+            var gt,t1,tall;
+            function ready(){
+                gt=new GuzuFileTools("file");
+            }
+
+            function load(){
+              
+              var data=gt.NNDatasetFromImages({divide:255,c:1,w:48,h:48,/*xscale:.2,yscale:.2,x:-10,y:-10, rescale:!true*/   })
+              gt.onload=()=>{
+                t1=tf.tensor(data.data[0]);//.slice([0,0,0],[1,48,48]);
+                tft1=tf.tidy(()=>tf.range(0,t1.shape[0]).expandDims(1));
+                tf.browser.toPixels(t1.slice([0],[1]).squeeze(),document.getElementById("c"));
+              };
+            }
+            
+
+        </script>
+        <body onload="ready()" bgcolor="gray">
+
+            <input type="file" id="file" multiple onchange="load()"/><button onclick="predict(-1)">predict</button>
+            <br><button onclick="train()">Train</button><button onclick="redraw(-1)">Redraw</button><button onclick="XLess()"><</button><button onclick="XMore()">></button>
+            <br><canvas id="c"></canvas>
+
+        </body>
+    </head>
+</html>

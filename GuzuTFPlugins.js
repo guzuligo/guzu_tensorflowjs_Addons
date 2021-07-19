@@ -726,7 +726,10 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
     this.size=args.size;
     this.seed=args.seed??0;
     this.noise=args.noise??0;
+    if(!Array.isArray(this.noise))
+      this.noise=[-this.noise,this.noise]
     this.cosGain=args.cosGain??1;
+    this.noiseOp=args.noiseOp??tf.add;
     this.layerBased=!this.tensor && !this.size;
     
     //console.log("LB:"+this.layerBased)
@@ -822,7 +825,7 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
     if(!this.tensor && this.tensor!==false)
       this.tensor=this.makeTensor();
     if (this.noise)
-      this.tensor=this.tensor.add(tf.randomUniform(this.tensor.shape,-this.noise,this.noise,'float32',this.seed??0));
+      this.tensor=this.noiseOp(this.tensor,tf.randomUniform(this.tensor.shape,this.noise[0],this.noise[1],'float32',this.seed??0));
     //this.tensor=this.tensor;
   }
 

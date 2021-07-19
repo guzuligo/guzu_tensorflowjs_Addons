@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>weightConv2d Test</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src='../google/tensorflow3.6.0.min.js'></script>
+        <script src='../google/tfjs-vis@1.4.3.js'></script>
+        <script src='../TFLayerPath.js'></script>
+        
+        <script src='../GuzuTFPlugins.js'></script>
+        <script src="../GuzuDataTools.js"></script>
+        <script src="../layerFixedConv2d.js"></script>
+        <script>
+            //model maker
+            var n,i=0,j=0;
+            var p=tf.util.path();//p.rename=true;
+            var f;//filters
+            var k;//kernal
+            p.add("in",tf.input({shape:[1]}));
+            //p.to("d0",tf.layers.dense({units:400,activation:"tanh"}));
+            p.to(`temp-${j++}`,tf.layers.temp({call:(inp)=>inp.mul(.1).add(.1)}))
+            p.to(`dense-${j++}`,tf.layers.dense({units:10,activation:"relu6"}));
+            p.to (n=`xDrop-${i}-${j++}`,tf.layers.dropout({rate:0.3}));
+            p.to(`temp-${j++}`,tf.layers.temp({call:(inp)=>inp.mul(3)}))
+            p.to(`dsene-${j++}`,tf.layers.dense({units:4,activation:"relu6"}));
+            p.to (n=`xDrop-${i}-${j++}`,tf.layers.dropout({rate:0.3}));
+            //p.to(`dsene-${j++}`,tf.layers.dense({units:50,activation:"relu"}));
+            var size=48*2+2;
+            p.to(n=`D-${i}-${j++}`,tf.layers.dense({units:(k=8)*k*(f=10)* (opc=10),activation:'relu6',name:n}));
+            p.to (n=`xDrop-${i}-${j++}`,tf.layers.dropout({rate:0.1}));
+            size=[size,size,f];
+            p.to(n=`C-${i}-${j++}`,(cw2d=tf.layers.convWeight2d({size:size,kernelSize:[k,k],strides:[1,1],noise:[1.2,2],seed:i,cosGain:1.1,noiseOp:tf.mul})))//48/48
+            p.to(n=`conv2d-${i}-${j++}`,tf.layers.conv2d({kernelSize:[3,3],strides:[2,2],filters:1,activation:'linear'}))
+            
+            var m=p.Model(null,null,0.0001*1);
+        </script>
+
+        <script>
+            var X=0;
+            function XLess(){
+                X=X-1;
+                if(X<0)X=0;
+                redraw(-1)
+            }
+            function XMore(){
+                X=X+1;
+                if(X>=t1.shape[0])X=t1.shape[0]-1;
+                redraw(-1)
+            }
+            function predict(val=1){tf.tidy(()=>{
+                if (val<0)val=X%t1.shape[0];
+                var r;
+                tf.browser.toPixels(r=m.predict(tf.tensor([val])).squeeze().minimum(1).maximum(0),document.getElementById("c"));
+                return r.dataSync();
+            })};
+
+            function redraw(x=0){
+                if (x<0)x=X%t1.shape[0];
+                tf.tidy(()=>{tf.browser.toPixels(t1.slice([x],[1]).squeeze(),document.getElementById("c"))});
+            }
+
+            var tft1;
+            function train(epochs=10000){
+                m.fit(tft1,t1,{
+                    epochs:epochs,batchSize:3,
+                    callbacks: tfvis.show.fitCallbacks({name:'training',tab:'training'}, ['loss'],window.tfvisfit={yAxisDomain:[0,.2],xAxisDomain:[0,100]})
+                });
+            }
+
+            function printLoss(){
+                return m.history.history.loss[-1+m.history.history.loss.length].dataSync()[0];
+            }
+        </script>
+
+        <script>
+            var gt,t1,tall;
+            function ready(){
+                gt=new GuzuFileTools("file");
+            }
+
+            function load(){
+              
+              var data=gt.NNDatasetFromImages({divide:255,c:1,w:48,h:48,/*xscale:.2,yscale:.2,x:-10,y:-10, rescale:!true*/   })
+              gt.onload=()=>{
+                t1=tf.tensor(data.data[0]);//.slice([0,0,0],[1,48,48]);
+                tft1=tf.tidy(()=>tf.range(0,t1.shape[0]).expandDims(1));
+                tf.browser.toPixels(t1.slice([0],[1]).squeeze(),document.getElementById("c"));
+              };
+            }
+            
+
+        </script>
+        <body onload="ready()" bgcolor="gray">
+
+            <input type="file" id="file" multiple onchange="load()"/><button onclick="predict(-1)">predict</button>
+            <br><button onclick="train()">Train</button><button onclick="redraw(-1)">Redraw</button><button onclick="XLess()"><</button><button onclick="XMore()">></button>
+            <br><canvas id="c"></canvas>
+
+        </body>
+    </head>
+</html>
