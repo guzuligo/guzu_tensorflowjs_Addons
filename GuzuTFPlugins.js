@@ -722,6 +722,7 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
     if(!isNaN(this.strides))
       this.strides=[this.strides,this.strides];
     this.padding=args.padding??'same';
+    this.depthwise=args.depthwise??"conv2d";//conv2d,separable,depthwise//TODO:
     this.tensor=args.tensor;
     this.size=args.size;
     this.seed=args.seed??0;
@@ -732,6 +733,15 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
     this.noiseOp=args.noiseOp??tf.add;
     this.layerBased=!this.tensor && !this.size;
     
+
+    switch(this.depthwise){
+      case "depthwise":
+        this.depthwiseFunction=(input,targetShape)=>tf.depthWiseConv2d(input,targetShape,this.strides,this.padding);
+        break;
+      default:
+      this.depthwiseFunction=(input,targetShape)=>tf.conv2d(input,targetShape,this.strides,this.padding);
+    }
+
     //console.log("LB:"+this.layerBased)
     
   }
@@ -760,6 +770,7 @@ window._guzuTF.ConvWeight2DLayer=class ConvWeight2DLayer extends tf.layers.Layer
 
   }
 
+  
 
   computeOutputShape(inputShape) {
     var a,b;//console.log(inputShape)
